@@ -258,8 +258,9 @@ CREATE TABLE reviews (
 
 ---
 
-## ⚡ 8. Advanced Features Implemented (Phases 14–18)
+## ⚡ 8. Advanced Features Implemented (Phases 14–26)
 
+### Phases 14–18: Smart Campus Trust & Infrastructure
 1. **📱 Dynamic QR Handover & Return Verification:**
    - Both borrower and lender can present dynamic campus QR codes and 6-digit handshake PINs (e.g. `BB-8492`) at the Central Library.
    - 1-click scan simulation timestamps pickup and automatically transitions items to **Active** with deposit escrow locks.
@@ -273,14 +274,33 @@ CREATE TABLE reviews (
 5. **🛡️ Autonomous Security Deposit Escrow Ledger:**
    - Transparent ledger viewable in `/my-borrowings` showing locked security deposits with guaranteed release upon verified QR return.
 
+### Phases 19–22: Credentials, Contracts & Multi-Campus
+6. **🎓 Official Student ID & Roll Number Verification:**
+   - Students can submit their campus roll number (e.g. `2023-CS-1048`) and department to unlock the verified `🎓 University Verified` badge.
+7. **📄 Digital Peer Lending Agreement Contract Generator:**
+   - Generates an official printable legal peer-borrowing contract complete with agreement ID, timestamps, deposit terms, and digital signature records.
+8. **🌱 Personalized Campus Sustainability Certificate:**
+   - Official downloadable certificate certifying student's personal carbon/waste diversion metrics and financial savings.
+9. **🏫 Multi-Campus University Switcher:**
+   - Switch between campus networks (XYZ Institute, National Institute of Design, City Engineering College, Delhi Tech Hub).
+
+### Phases 23–26: Community Superchargers & Offline PWA
+10. **🎒 Course & Semester Equipment Kits Hub:**
+    - Package-deal borrowing for 1st Year Engineering Drawing, IoT Hardware Kits, and Chemistry Safety Lab Sets with 1-click request.
+11. **💡 "Ask Seniors" Peer Equipment Mentorship Forum:**
+    - Upvoteable Q&A board where seniors answer practical questions on allowed calculator models, lab coat sizing, and faculty rules, linking directly to listed items.
+12. **🔊 Synthesized Web Audio Micro-Interactions:**
+    - Zero-dependency browser Web Audio API audio feedback with cheerful ascending chimes on approvals, returns, and point awards, with a top demo bar mute toggle.
+13. **📲 Progressive Web App (PWA) Offline Readiness:**
+    - Native `manifest.json`, background service worker (`sw.js`), and floating install banner enabling instant home screen install and offline access in campus basements.
+
 ---
 
 ## 🔮 9. Production Horizon Roadmap
 
-1. **Official University Email Verification:** Multi-tenant domain verification (e.g. `@college.edu.in`) promoting accounts to `🎓 University Verified`.
-2. **Push Notifications & WebSockets:** Native Web Push API alerts for deadline countdowns and real-time socket chat.
-3. **Hardware Locker Integration:** Smart campus locker drop-off for 24/7 autonomous handovers.
-4. **AI Damage Detection:** Computer vision model comparing pre- and post-return photos to automatically detect cracks or missing accessories.
+1. **Native Push Notifications:** Web Push API alerts for return deadline countdowns.
+2. **Hardware Locker Integration:** Smart campus locker drop-off for 24/7 autonomous handovers.
+3. **AI Damage Detection:** Computer vision model comparing pre- and post-return photos to automatically detect cracks or missing accessories.
 
 ---
 
