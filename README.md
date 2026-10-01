@@ -258,14 +258,29 @@ CREATE TABLE reviews (
 
 ---
 
-## 🔮 8. Future Roadmap & Production Enhancements
+## ⚡ 8. Advanced Features Implemented (Phases 14–18)
+
+1. **📱 Dynamic QR Handover & Return Verification:**
+   - Both borrower and lender can present dynamic campus QR codes and 6-digit handshake PINs (e.g. `BB-8492`) at the Central Library.
+   - 1-click scan simulation timestamps pickup and automatically transitions items to **Active** with deposit escrow locks.
+2. **📸 Pre-handover Damage Evidence Photo Log:**
+   - Interactive inspection checklist capturing front, display, and angle condition photos before custody transfer.
+   - Eliminates deposit disputes and protects both students.
+3. **✨ BuddyAI Campus Assistant & Syllabus Matcher:**
+   - Interactive AI assistant in the top navigation matching semester courses (CAD, Chemistry Lab, Data Structures) with items available on campus.
+4. **🗺️ Interactive Campus Landmark Map View:**
+   - Visual campus map on `/explore` displaying real-time item counts and walking times across the Central Library, Canteen, Department Block, Main Gate, and Hostel Reception.
+5. **🛡️ Autonomous Security Deposit Escrow Ledger:**
+   - Transparent ledger viewable in `/my-borrowings` showing locked security deposits with guaranteed release upon verified QR return.
+
+---
+
+## 🔮 9. Production Horizon Roadmap
 
 1. **Official University Email Verification:** Multi-tenant domain verification (e.g. `@college.edu.in`) promoting accounts to `🎓 University Verified`.
-2. **QR-Code Handover & Return Verification:** Borrower and owner scan each other's dynamic QR code at pickup to timestamp transfer and release deposits.
-3. **Damage Photo Evidence:** Upload pre-handover and post-return condition photos to prevent disputes.
-4. **Push Notifications & WebSockets:** Native Web Push API alerts for deadline countdowns and real-time chat.
-5. **Campus Map Integration:** Interactive Leaflet/OpenStreetMap overlay showing pickup spots relative to academic blocks and hostel corridors.
-6. **AI-Assisted Listing & Course Syllabus Matching:** Upload textbook cover or tool photo to auto-extract condition, model, and semester syllabus utility.
+2. **Push Notifications & WebSockets:** Native Web Push API alerts for deadline countdowns and real-time socket chat.
+3. **Hardware Locker Integration:** Smart campus locker drop-off for 24/7 autonomous handovers.
+4. **AI Damage Detection:** Computer vision model comparing pre- and post-return photos to automatically detect cracks or missing accessories.
 
 ---
 
