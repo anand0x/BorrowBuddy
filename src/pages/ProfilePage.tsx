@@ -12,16 +12,25 @@ import {
   MapPin, 
   ShieldCheck, 
   TrendingUp,
-  Info
+  Info,
+  GraduationCap,
+  Leaf,
+  Building
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { StorageService } from '../services/storageService';
 import { RatingStars } from '../components/common/RatingStars';
 import { ItemCard } from '../components/common/ItemCard';
+import { IDVerificationModal } from '../components/common/IDVerificationModal';
+import { SustainabilityCertificateModal } from '../components/common/SustainabilityCertificateModal';
+import { CampusSelectorModal } from '../components/common/CampusSelectorModal';
 
 export const ProfilePage: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'items' | 'reviews' | 'trust'>('items');
+  const [isIdModalOpen, setIsIdModalOpen] = useState(false);
+  const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+  const [isCampusModalOpen, setIsCampusModalOpen] = useState(false);
 
   if (!user) return null;
 
@@ -71,12 +80,37 @@ export const ProfilePage: React.FC = () => {
                   <span>👤</span>
                   <span>BorrowBuddy Member</span>
                 </span>
+
+                {user.isUniversityVerified ? (
+                  <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200/80 flex items-center gap-1 shadow-2xs">
+                    <span>🎓</span>
+                    <span>University Verified</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsIdModalOpen(true)}
+                    className="px-2.5 py-1 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200/80 flex items-center gap-1 transition shadow-2xs cursor-pointer"
+                    title="Verify Student Roll No & Campus ID to earn the University Verified badge"
+                  >
+                    <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Verify Student ID</span>
+                  </button>
+                )}
               </div>
 
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                <span>{user.university}</span>
-              </p>
+              <div className="mt-1 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCampusModalOpen(true)}
+                  className="text-xs sm:text-sm text-slate-600 hover:text-indigo-600 flex items-center gap-1.5 transition group cursor-pointer"
+                  title="Click to switch your active university/campus network"
+                >
+                  <Building className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500" />
+                  <span className="font-semibold underline decoration-slate-300 group-hover:decoration-indigo-500">{user.university}</span>
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded border border-indigo-200/60 ml-0.5">Switch</span>
+                </button>
+              </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
                 <div className="flex items-center gap-1 text-amber-500 font-bold bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200/60">
@@ -91,13 +125,25 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
 
-          <Link
-            to="/edit-profile"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-600 font-bold text-xs transition shadow-2xs self-start md:self-auto"
-          >
-            <Edit3 className="w-4 h-4" />
-            <span>Edit Profile</span>
-          </Link>
+          <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
+            <button
+              type="button"
+              onClick={() => setIsCertModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 hover:bg-teal-100 font-bold text-xs transition shadow-2xs cursor-pointer"
+              title="View and download your official Campus Sustainability & Sharing Certificate"
+            >
+              <Leaf className="w-4 h-4 text-teal-600" />
+              <span>Green Certificate</span>
+            </button>
+
+            <Link
+              to="/edit-profile"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-600 font-bold text-xs transition shadow-2xs"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Edit Profile</span>
+            </Link>
+          </div>
         </div>
 
         {user.bio && (
@@ -176,6 +222,22 @@ export const ProfilePage: React.FC = () => {
             <span>Verified Activity</span>
           </h3>
           <div className="space-y-2.5 text-xs text-slate-700">
+            <div 
+              onClick={() => !user.isUniversityVerified && setIsIdModalOpen(true)}
+              className={`flex items-center justify-between p-2 rounded-xl border transition ${
+                user.isUniversityVerified 
+                  ? 'bg-emerald-50 text-emerald-900 border-emerald-200/60' 
+                  : 'bg-amber-50 text-amber-900 border-amber-200/60 cursor-pointer hover:bg-amber-100'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <GraduationCap className={`w-4 h-4 ${user.isUniversityVerified ? 'text-emerald-600' : 'text-amber-600'} shrink-0`} />
+                <span className="font-semibold">{user.isUniversityVerified ? 'Official Student ID Verified' : 'Standard Account'}</span>
+              </div>
+              {!user.isUniversityVerified && (
+                <span className="text-[10px] font-extrabold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">Verify</span>
+              )}
+            </div>
             <div className="flex items-center gap-2 p-2 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200/60">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{user.successfulReturns} successful transactions</span>
@@ -276,6 +338,25 @@ export const ProfilePage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Student ID Verification Modal */}
+      <IDVerificationModal
+        isOpen={isIdModalOpen}
+        onClose={() => setIsIdModalOpen(false)}
+      />
+
+      {/* Sustainability Certificate Modal */}
+      <SustainabilityCertificateModal
+        isOpen={isCertModalOpen}
+        onClose={() => setIsCertModalOpen(false)}
+        user={user}
+      />
+
+      {/* Multi-Campus Network Selector Modal */}
+      <CampusSelectorModal
+        isOpen={isCampusModalOpen}
+        onClose={() => setIsCampusModalOpen(false)}
+      />
     </div>
   );
 };

@@ -12,7 +12,8 @@ import {
   ShieldCheck,
   QrCode,
   Camera,
-  Wallet
+  Wallet,
+  FileText
 } from 'lucide-react';
 import { StorageService } from '../services/storageService';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +23,7 @@ import { ReviewModal } from '../components/common/ReviewModal';
 import { QRHandoverModal } from '../components/common/QRHandoverModal';
 import { ConditionInspectionModal } from '../components/common/ConditionInspectionModal';
 import { EscrowLedgerModal } from '../components/common/EscrowLedgerModal';
+import { LendingAgreementModal } from '../components/common/LendingAgreementModal';
 import { BorrowRequest } from '../types';
 import { formatCurrency, formatDate } from '../utils/cn';
 
@@ -34,6 +36,7 @@ export const MyBorrowingsPage: React.FC = () => {
   const [reviewRequest, setReviewRequest] = useState<BorrowRequest | null>(null);
   const [qrRequest, setQrRequest] = useState<{ request: BorrowRequest; action: 'pickup' | 'return' } | null>(null);
   const [inspectionItem, setInspectionItem] = useState<{ title: string; image: string } | null>(null);
+  const [agreementRequest, setAgreementRequest] = useState<BorrowRequest | null>(null);
   const [isEscrowOpen, setIsEscrowOpen] = useState(false);
 
   if (!user) return null;
@@ -241,6 +244,15 @@ export const MyBorrowingsPage: React.FC = () => {
                   </button>
 
                   <button
+                    type="button"
+                    onClick={() => setAgreementRequest(req)}
+                    className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition"
+                    title="View peer lending agreement / contract"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </button>
+
+                  <button
                     onClick={() => handleOpenChat(req)}
                     className="px-3.5 py-2 rounded-xl border border-indigo-200 text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 font-bold text-xs transition flex items-center gap-1.5"
                   >
@@ -349,6 +361,15 @@ export const MyBorrowingsPage: React.FC = () => {
         onClose={() => setIsEscrowOpen(false)}
         activeRequests={activeItems}
       />
+
+      {/* Peer Lending Agreement Modal */}
+      {agreementRequest && (
+        <LendingAgreementModal
+          isOpen={Boolean(agreementRequest)}
+          onClose={() => setAgreementRequest(null)}
+          request={agreementRequest}
+        />
+      )}
     </div>
   );
 };
