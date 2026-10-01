@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { StorageService } from '../services/storageService';
 import { useAuth } from './AuthContext';
+import { sound } from '../utils/audio';
 
 export interface ToastMessage {
   id: string;
@@ -24,6 +25,8 @@ interface AppContextType {
   selectedCategory: string;
   setSelectedCategory: (catId: string) => void;
   resetDemoData: () => void;
+  isSoundEnabled: boolean;
+  toggleSound: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -37,14 +40,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [dataVersion, setDataVersion] = useState(0);
+  const [isSoundEnabled, setIsSoundEnabled] = useState(() => sound.getSoundEnabled());
 
   const refreshAppData = useCallback(() => {
     setDataVersion(v => v + 1);
   }, []);
 
+  const toggleSound = useCallback(() => {
+    setIsSoundEnabled(prev => {
+      const next = !prev;
+      sound.setSoundEnabled(next);
+      if (next) sound.playSuccessChime();
+      return next;
+    });
+  }, []);
+
   const showToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
     setToasts(prev => [...prev, { ...toast, id }]);
+
+    // Play appropriate sound effect
+    if (toast.type === 'success') {
+      sound.playSuccessChime();
+    } else if (toast.type === 'error' || toast.type === 'warning') {
+      sound.playWarning();
+    } else {
+      sound.playNotificationPing();
+    }
+
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 4000);
@@ -114,6 +137,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         selectedCategory,
         setSelectedCategory,
         resetDemoData,
+        isSoundEnabled,
+        toggleSound,
       }}
     >
       {children}

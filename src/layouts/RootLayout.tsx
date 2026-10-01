@@ -5,6 +5,7 @@ import { Footer } from '../components/layout/Footer';
 import { BottomNav } from '../components/layout/BottomNav';
 import { DemoBanner } from '../components/common/DemoBanner';
 import { ToastContainer } from '../components/common/ToastContainer';
+import { PWAInstallBanner } from '../components/common/PWAInstallBanner';
 
 export const RootLayout: React.FC = () => {
   return (
@@ -17,6 +18,7 @@ export const RootLayout: React.FC = () => {
       <Footer />
       <BottomNav />
       <ToastContainer />
+      <PWAInstallBanner />
     </div>
   );
 };

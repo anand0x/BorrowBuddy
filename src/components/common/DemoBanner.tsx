@@ -1,11 +1,11 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
-import { Users, RotateCcw, Sparkles } from 'lucide-react';
+import { Users, RotateCcw, Sparkles, Volume2, VolumeX } from 'lucide-react';
 
 export const DemoBanner: React.FC = () => {
   const { user, switchDemoUser } = useAuth();
-  const { resetDemoData } = useApp();
+  const { resetDemoData, isSoundEnabled, toggleSound } = useApp();
 
   return (
     <div className="bg-gradient-to-r from-indigo-900 via-brand-800 to-indigo-950 text-white text-xs px-4 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-indigo-700/50">
@@ -57,8 +57,17 @@ export const DemoBanner: React.FC = () => {
         </div>
 
         <button
+          onClick={toggleSound}
+          className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-indigo-200 hover:text-white hover:bg-indigo-800 transition cursor-pointer"
+          title={isSoundEnabled ? 'Audio Effects On (Click to mute)' : 'Audio Effects Muted (Click to enable)'}
+        >
+          {isSoundEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+          <span className="hidden lg:inline">{isSoundEnabled ? 'Sound On' : 'Muted'}</span>
+        </button>
+
+        <button
           onClick={resetDemoData}
-          className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-indigo-200 hover:text-white hover:bg-indigo-800 transition"
+          className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-indigo-200 hover:text-white hover:bg-indigo-800 transition cursor-pointer"
           title="Reset sample items, chats and requests to initial state"
         >
           <RotateCcw className="w-3 h-3" />

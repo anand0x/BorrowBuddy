@@ -21,6 +21,8 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { AIAssistantModal } from '../common/AIAssistantModal';
+import { CourseKitsModal } from '../common/CourseKitsModal';
+import { AskSeniorsModal } from '../common/AskSeniorsModal';
 
 export const Navbar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -28,6 +30,8 @@ export const Navbar: React.FC = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAIOpen, setIsAIOpen] = useState(false);
+  const [isKitsOpen, setIsKitsOpen] = useState(false);
+  const [isSeniorsOpen, setIsSeniorsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -89,12 +93,30 @@ export const Navbar: React.FC = () => {
             >
               Need Something?
             </Link>
+            <button
+              type="button"
+              onClick={() => setIsKitsOpen(true)}
+              className="px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 flex items-center gap-1.5 transition cursor-pointer"
+              title="Course & Semester Equipment Bundles"
+            >
+              <Package className="w-4 h-4 text-indigo-500" />
+              <span>Semester Kits</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsSeniorsOpen(true)}
+              className="px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-amber-600 hover:bg-amber-50/50 flex items-center gap-1.5 transition cursor-pointer"
+              title="Ask Seniors: Campus Equipment Advice Forum"
+            >
+              <HelpCircle className="w-4 h-4 text-amber-500" />
+              <span>Ask Seniors</span>
+            </button>
             <Link
               to="/explore?filter=sos"
               className="px-3 py-2 rounded-xl text-sm font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-1 transition"
             >
               <Zap className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-              <span>BorrowBuddy SOS</span>
+              <span>SOS</span>
             </Link>
             <Link
               to="/safety"
@@ -104,7 +126,7 @@ export const Navbar: React.FC = () => {
                   : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'
               }`}
             >
-              Safety & Help
+              Safety
             </Link>
           </nav>
 
@@ -317,6 +339,28 @@ export const Navbar: React.FC = () => {
           >
             Need Something? (Community Ask)
           </Link>
+          <button
+            type="button"
+            onClick={() => {
+              setIsKitsOpen(true);
+              setMobileMenuOpen(false);
+            }}
+            className="w-full text-left px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2"
+          >
+            <Package className="w-4 h-4 text-indigo-500" />
+            <span>Semester Kits (Course Bundles)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsSeniorsOpen(true);
+              setMobileMenuOpen(false);
+            }}
+            className="w-full text-left px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-2"
+          >
+            <HelpCircle className="w-4 h-4 text-amber-500" />
+            <span>Ask Seniors (Equipment Q&A)</span>
+          </button>
           <Link
             to="/explore?filter=sos"
             onClick={() => setMobileMenuOpen(false)}
@@ -395,6 +439,12 @@ export const Navbar: React.FC = () => {
 
       {/* BuddyAI Campus Assistant Modal */}
       <AIAssistantModal isOpen={isAIOpen} onClose={() => setIsAIOpen(false)} />
+
+      {/* Semester Equipment Kits Modal */}
+      <CourseKitsModal isOpen={isKitsOpen} onClose={() => setIsKitsOpen(false)} />
+
+      {/* Ask Seniors Mentorship Modal */}
+      <AskSeniorsModal isOpen={isSeniorsOpen} onClose={() => setIsSeniorsOpen(false)} />
     </header>
   );
 };

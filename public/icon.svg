@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bb-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="50%" stop-color="#4338CA" />
+      <stop offset="100%" stop-color="#312E81" />
+    </linearGradient>
+    <filter id="soft-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#312E81" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bb-grad)" />
+  <g transform="translate(96, 96)" filter="url(#soft-shadow)">
+    <!-- Package / Exchange Symbol -->
+    <path d="M160 32 L288 104 L160 176 L32 104 Z" fill="#FFFFFF" fill-opacity="0.95" />
+    <path d="M32 128 L144 192 L144 288 L32 224 Z" fill="#E0E7FF" fill-opacity="0.8" />
+    <path d="M176 192 L288 128 L288 224 L176 288 Z" fill="#C7D2FE" fill-opacity="0.9" />
+    <!-- Circular arrows for borrowing / sharing -->
+    <path d="M80 64 A 120 120 0 0 1 240 64" fill="none" stroke="#A5B4FC" stroke-width="14" stroke-linecap="round" stroke-dasharray="16 12" />
+    <path d="M240 256 A 120 120 0 0 1 80 256" fill="none" stroke="#A5B4FC" stroke-width="14" stroke-linecap="round" stroke-dasharray="16 12" />
+  </g>
+</svg>
