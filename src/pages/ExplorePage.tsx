@@ -13,6 +13,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { ItemCard } from '../components/common/ItemCard';
+import { CampusMapView } from '../components/common/CampusMapView';
 import { StorageService } from '../services/storageService';
 import { CATEGORIES } from '../data/mockData';
 import { useApp } from '../context/AppContext';
@@ -31,6 +32,7 @@ export const ExplorePage: React.FC = () => {
   const [sosOnly, setSosOnly] = useState(searchParams.get('filter') === 'sos');
   const [sortBy, setSortBy] = useState<'popular' | 'newest' | 'price-low' | 'rating'>('popular');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   // Sync with searchParams
   useEffect(() => {
@@ -192,6 +194,21 @@ export const ExplorePage: React.FC = () => {
               <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             </div>
 
+            {/* Campus Map View Toggle */}
+            <button
+              type="button"
+              onClick={() => setShowMap(!showMap)}
+              className={`px-3.5 py-3 rounded-2xl border text-xs font-bold flex items-center gap-1.5 transition shadow-soft ${
+                showMap
+                  ? 'bg-indigo-600 text-white border-indigo-700'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+              title="Toggle interactive campus landmark map"
+            >
+              <span>🗺️</span>
+              <span className="hidden sm:inline">{showMap ? 'Hide Map' : 'Campus Map'}</span>
+            </button>
+
             {/* Mobile Filter Toggle Button */}
             <button
               onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
@@ -236,6 +253,17 @@ export const ExplorePage: React.FC = () => {
             </button>
           ))}
         </div>
+
+        {/* Interactive Campus Map View */}
+        {showMap && (
+          <div className="mt-5 animate-in fade-in slide-in-from-top-3 duration-200">
+            <CampusMapView
+              items={items}
+              selectedLocation={locationFilter}
+              onSelectLocation={setLocationFilter}
+            />
+          </div>
+        )}
       </div>
 
       {/* Main Content: Sidebar Filters + Items Grid */}
@@ -428,3 +456,4 @@ export const ExplorePage: React.FC = () => {
     </div>
   );
 };
+

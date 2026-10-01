@@ -206,3 +206,4 @@ export const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
     </div>
   );
 };
+

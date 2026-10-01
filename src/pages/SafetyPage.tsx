@@ -170,3 +170,4 @@ export const SafetyPage: React.FC = () => {
     </div>
   );
 };
+

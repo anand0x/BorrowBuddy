@@ -717,3 +717,4 @@ export const StorageService = {
     return getFromStorage(STORAGE_KEYS.IMPACT, IMPACT_METRICS);
   }
 };
+

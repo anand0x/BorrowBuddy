@@ -144,3 +144,4 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, featured = false }) =>
     </div>
   );
 };
+

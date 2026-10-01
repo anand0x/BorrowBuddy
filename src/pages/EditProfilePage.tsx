@@ -126,3 +126,4 @@ export const EditProfilePage: React.FC = () => {
     </div>
   );
 };
+

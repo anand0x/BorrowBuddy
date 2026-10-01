@@ -20,12 +20,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
+import { AIAssistantModal } from '../common/AIAssistantModal';
 
 export const Navbar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { unreadNotificationsCount, unreadMessagesCount, wishlist } = useApp();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAIOpen, setIsAIOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -108,6 +110,17 @@ export const Navbar: React.FC = () => {
 
           {/* Right Action Icons & Auth */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* AI Assistant Button */}
+            <button
+              type="button"
+              onClick={() => setIsAIOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-50 to-teal-50 border border-indigo-200/80 text-indigo-700 hover:text-indigo-900 font-bold text-xs transition shadow-2xs hover:scale-102"
+              title="Ask Campus Syllabus & Gear AI"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Ask AI</span>
+            </button>
+
             {/* List an Item CTA */}
             <Link
               to="/list-item"
@@ -379,6 +392,10 @@ export const Navbar: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* BuddyAI Campus Assistant Modal */}
+      <AIAssistantModal isOpen={isAIOpen} onClose={() => setIsAIOpen(false)} />
     </header>
   );
 };
+

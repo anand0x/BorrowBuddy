@@ -9,13 +9,19 @@ import {
   AlertCircle, 
   Star, 
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  QrCode,
+  Camera,
+  Wallet
 } from 'lucide-react';
 import { StorageService } from '../services/storageService';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { ReviewModal } from '../components/common/ReviewModal';
+import { QRHandoverModal } from '../components/common/QRHandoverModal';
+import { ConditionInspectionModal } from '../components/common/ConditionInspectionModal';
+import { EscrowLedgerModal } from '../components/common/EscrowLedgerModal';
 import { BorrowRequest } from '../types';
 import { formatCurrency, formatDate } from '../utils/cn';
 
@@ -26,6 +32,9 @@ export const MyBorrowingsPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'active' | 'upcoming' | 'returned' | 'all'>('active');
   const [reviewRequest, setReviewRequest] = useState<BorrowRequest | null>(null);
+  const [qrRequest, setQrRequest] = useState<{ request: BorrowRequest; action: 'pickup' | 'return' } | null>(null);
+  const [inspectionItem, setInspectionItem] = useState<{ title: string; image: string } | null>(null);
+  const [isEscrowOpen, setIsEscrowOpen] = useState(false);
 
   if (!user) return null;
 
@@ -83,13 +92,23 @@ export const MyBorrowingsPage: React.FC = () => {
           </p>
         </div>
 
-        <Link
-          to="/explore"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition shadow-soft self-start sm:self-auto"
-        >
-          <span>Find More Items</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button
+            type="button"
+            onClick={() => setIsEscrowOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs hover:bg-emerald-100 transition shadow-2xs"
+          >
+            <Wallet className="w-4 h-4 text-emerald-600" />
+            <span>Escrow Ledger</span>
+          </button>
+          <Link
+            to="/explore"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition shadow-soft"
+          >
+            <span>Find More Items</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -187,6 +206,40 @@ export const MyBorrowingsPage: React.FC = () => {
 
                 {/* Actions */}
                 <div className="flex flex-wrap items-center gap-2 shrink-0 md:self-center">
+                  {/* QR Handover Scan Button */}
+                  {(req.status === 'Accepted' || req.status === 'Upcoming') && (
+                    <button
+                      type="button"
+                      onClick={() => setQrRequest({ request: req, action: 'pickup' })}
+                      className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-soft"
+                      title="Present Handover QR code at campus pickup spot"
+                    >
+                      <QrCode className="w-3.5 h-3.5" />
+                      <span>Handover QR</span>
+                    </button>
+                  )}
+
+                  {req.status === 'Active' && (
+                    <button
+                      type="button"
+                      onClick={() => setQrRequest({ request: req, action: 'return' })}
+                      className="px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-xs flex items-center gap-1.5"
+                      title="Verify return with owner"
+                    >
+                      <QrCode className="w-3.5 h-3.5" />
+                      <span>Return QR</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setInspectionItem({ title: req.itemTitle, image: req.itemImage })}
+                    className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+                    title="View item condition evidence photos"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
+
                   <button
                     onClick={() => handleOpenChat(req)}
                     className="px-3.5 py-2 rounded-xl border border-indigo-200 text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 font-bold text-xs transition flex items-center gap-1.5"
@@ -265,6 +318,38 @@ export const MyBorrowingsPage: React.FC = () => {
           }}
         />
       )}
+
+      {/* QR Handover & Return Modal */}
+      {qrRequest && (
+        <QRHandoverModal
+          isOpen={Boolean(qrRequest)}
+          onClose={() => setQrRequest(null)}
+          request={qrRequest.request}
+          actionType={qrRequest.action}
+          onSuccess={() => {
+            setQrRequest(null);
+            refreshAppData();
+          }}
+        />
+      )}
+
+      {/* Condition Inspection Modal */}
+      {inspectionItem && (
+        <ConditionInspectionModal
+          isOpen={Boolean(inspectionItem)}
+          onClose={() => setInspectionItem(null)}
+          itemTitle={inspectionItem.title}
+          itemImage={inspectionItem.image}
+        />
+      )}
+
+      {/* Escrow Ledger Modal */}
+      <EscrowLedgerModal
+        isOpen={isEscrowOpen}
+        onClose={() => setIsEscrowOpen(false)}
+        activeRequests={activeItems}
+      />
     </div>
   );
 };
+

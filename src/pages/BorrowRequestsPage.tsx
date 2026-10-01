@@ -10,13 +10,15 @@ import {
   Clock, 
   ShieldCheck,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  QrCode
 } from 'lucide-react';
 import { StorageService } from '../services/storageService';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { RatingStars } from '../components/common/RatingStars';
+import { QRHandoverModal } from '../components/common/QRHandoverModal';
 import { BorrowRequest } from '../types';
 import { formatCurrency, formatDate } from '../utils/cn';
 import confetti from 'canvas-confetti';
@@ -27,6 +29,7 @@ export const BorrowRequestsPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [filter, setFilter] = useState<'all' | 'Pending' | 'Accepted' | 'Rejected'>('all');
+  const [selectedQRReq, setSelectedQRReq] = useState<BorrowRequest | null>(null);
 
   if (!user) return null;
 
@@ -198,13 +201,24 @@ export const BorrowRequestsPage: React.FC = () => {
                       </button>
                     </>
                   ) : (
-                    <button
-                      onClick={() => handleOpenChat(req)}
-                      className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-bold text-xs transition shadow-soft flex items-center gap-1.5"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      <span>Open Campus Chat</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedQRReq(req)}
+                        className="px-3.5 py-2.5 rounded-xl border border-indigo-200 text-indigo-700 bg-indigo-50/60 hover:bg-indigo-100 font-bold text-xs flex items-center gap-1.5 transition"
+                        title="Verify pickup or return via QR"
+                      >
+                        <QrCode className="w-3.5 h-3.5" />
+                        <span>Handover QR</span>
+                      </button>
+                      <button
+                        onClick={() => handleOpenChat(req)}
+                        className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-bold text-xs transition shadow-soft flex items-center gap-1.5"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span>Chat</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -229,6 +243,21 @@ export const BorrowRequestsPage: React.FC = () => {
           </Link>
         </div>
       )}
+
+      {/* QR Handover Modal */}
+      {selectedQRReq && (
+        <QRHandoverModal
+          isOpen={Boolean(selectedQRReq)}
+          onClose={() => setSelectedQRReq(null)}
+          request={selectedQRReq}
+          actionType={selectedQRReq.status === 'Active' ? 'return' : 'pickup'}
+          onSuccess={() => {
+            setSelectedQRReq(null);
+            refreshAppData();
+          }}
+        />
+      )}
     </div>
   );
 };
+

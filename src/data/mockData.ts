@@ -696,3 +696,4 @@ export const IMPACT_METRICS = {
   wasteAvoidedKg: 856, // kg
   disclaimer: 'Impact figures shown in this prototype are illustrative estimates based on campus peer reuse data.',
 };
+
