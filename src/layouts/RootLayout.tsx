@@ -12,7 +12,7 @@ export const RootLayout: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-slate-50/50 text-slate-900">
       <DemoBanner />
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 pb-16 lg:pb-0">
         <Outlet />
       </main>
       <Footer />

@@ -13,11 +13,10 @@ import { useApp } from '../context/AppContext';
 
 export const SettingsPage: React.FC = () => {
   const { user, logout } = useAuth();
-  const { resetDemoData, showToast } = useApp();
+  const { resetDemoData, showToast, isSoundEnabled, toggleSound } = useApp();
 
   const [returnReminders, setReturnReminders] = useState(true);
   const [requestAlerts, setRequestAlerts] = useState(true);
-  const [chatSounds, setChatSounds] = useState(true);
 
   if (!user) return null;
 
@@ -78,14 +77,14 @@ export const SettingsPage: React.FC = () => {
 
           <label className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100 cursor-pointer">
             <div>
-              <span className="font-semibold text-slate-800 block">Campus Chat Notifications</span>
-              <span className="text-slate-500 text-xs">Alert me on new messages from borrowers and owners.</span>
+              <span className="font-semibold text-slate-800 block">Campus Audio Micro-Interactions & Chimes</span>
+              <span className="text-slate-500 text-xs">Play pleasant audio feedback on borrow approval, return, and point awards.</span>
             </div>
             <input
               type="checkbox"
-              checked={chatSounds}
-              onChange={e => setChatSounds(e.target.checked)}
-              className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+              checked={isSoundEnabled}
+              onChange={toggleSound}
+              className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
             />
           </label>
         </div>

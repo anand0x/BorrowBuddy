@@ -18,12 +18,14 @@ import { StorageService } from '../services/storageService';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { EditItemModal } from '../components/common/EditItemModal';
 import { Item, ItemStatus } from '../types';
 import { formatCurrency } from '../utils/cn';
 
 export const MyListingsPage: React.FC = () => {
   const { user } = useAuth();
   const { showToast, refreshAppData } = useApp();
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
 
   if (!user) return null;
 
@@ -190,8 +192,16 @@ export const MyListingsPage: React.FC = () => {
                     </button>
 
                     <button
+                      onClick={() => setEditingItem(item)}
+                      className="p-2 rounded-xl text-slate-600 hover:text-indigo-600 hover:bg-slate-50 border border-slate-200 transition cursor-pointer"
+                      title="Edit item details"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+
+                    <button
                       onClick={() => handleDeleteItem(item.id, item.title)}
-                      className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-slate-200 transition"
+                      className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-slate-200 transition cursor-pointer"
                       title="Delete listing"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -226,6 +236,15 @@ export const MyListingsPage: React.FC = () => {
             List Your First Item (+10 pts)
           </Link>
         </div>
+      )}
+
+      {/* Edit Item Modal */}
+      {editingItem && (
+        <EditItemModal
+          isOpen={Boolean(editingItem)}
+          onClose={() => setEditingItem(null)}
+          item={editingItem}
+        />
       )}
     </div>
   );
