@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { StorageService } from '../services/storageService';
 import { useAuth } from './AuthContext';
 import { sound } from '../utils/audio';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
+import { SupabaseService } from '../services/supabaseService';
 
 export interface ToastMessage {
   id: string;
@@ -77,22 +79,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // Sync data and setup Realtime subscriptions
   useEffect(() => {
-    setWishlist(StorageService.getWishlist());
+    // Initial sync
+    StorageService.syncWithSupabase().then(() => {
+      setWishlist(StorageService.getWishlist());
 
-    if (user) {
-      const notifs = StorageService.getNotifications(user.id);
-      setUnreadNotificationsCount(notifs.filter(n => !n.read).length);
+      if (user) {
+        const notifs = StorageService.getNotifications(user.id);
+        setUnreadNotificationsCount(notifs.filter(n => !n.read).length);
 
-      const convs = StorageService.getConversations();
-      const userConvs = convs.filter(c => c.borrowerId === user.id || c.ownerId === user.id);
-      const unreadTotal = userConvs.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
-      setUnreadMessagesCount(unreadTotal);
-    } else {
-      setUnreadNotificationsCount(0);
-      setUnreadMessagesCount(0);
+        const convs = StorageService.getConversations();
+        const userConvs = convs.filter(c => c.borrowerId === user.id || c.ownerId === user.id);
+        const unreadTotal = userConvs.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+        setUnreadMessagesCount(unreadTotal);
+      } else {
+        setUnreadNotificationsCount(0);
+        setUnreadMessagesCount(0);
+      }
+    });
+
+    // Realtime subscriptions when Supabase is configured and user is active
+    let notifUnsub: (() => void) | null = null;
+    let msgUnsub: (() => void) | null = null;
+
+    if (isSupabaseConfigured && user) {
+      try {
+        notifUnsub = SupabaseService.subscribeToNotifications(user.id, (newNotif) => {
+          showToast({
+            type: 'info',
+            title: newNotif.title,
+            message: newNotif.message
+          });
+          refreshAppData();
+        });
+
+        msgUnsub = SupabaseService.subscribeToMessages(user.id, (newMsg) => {
+          if (newMsg.senderId !== user.id) {
+            showToast({
+              type: 'info',
+              title: `New message from ${newMsg.senderName} 💬`,
+              message: newMsg.text
+            });
+            refreshAppData();
+          }
+        });
+      } catch (err) {
+        console.warn('Supabase Realtime subscription note:', err);
+      }
     }
-  }, [user, dataVersion]);
+
+    return () => {
+      if (notifUnsub) notifUnsub();
+      if (msgUnsub) msgUnsub();
+    };
+  }, [user, dataVersion, refreshAppData, showToast]);
 
   const toggleWishlist = useCallback((itemId: string) => {
     const isAdded = StorageService.toggleWishlist(itemId);
@@ -153,4 +194,3 @@ export const useApp = () => {
   }
   return context;
 };
-

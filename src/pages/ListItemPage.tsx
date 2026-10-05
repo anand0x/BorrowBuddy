@@ -17,6 +17,8 @@ import { CampusLocation, ItemCondition, ItemStatus } from '../types';
 import { StorageService } from '../services/storageService';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
+import { SupabaseService } from '../services/supabaseService';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
 import confetti from 'canvas-confetti';
 
 export const ListItemPage: React.FC = () => {
@@ -37,6 +39,7 @@ export const ListItemPage: React.FC = () => {
   const [images, setImages] = useState<string[]>([
     'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80'
   ]);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [createdItemId, setCreatedItemId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +53,37 @@ export const ListItemPage: React.FC = () => {
     { label: 'Soldering Kit', url: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80' },
     { label: 'Charger', url: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&auto=format&fit=crop&q=80' },
   ];
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      let publicUrl: string | null = null;
+      if (isSupabaseConfigured) {
+        publicUrl = await SupabaseService.uploadItemImage(file, user?.id || 'demo-user');
+      }
+
+      if (publicUrl) {
+        setImages(prev => [...prev, publicUrl as string]);
+        showToast({ type: 'success', message: 'Photo uploaded to Supabase Storage! 📸' });
+      } else {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            setImages(prev => [...prev, reader.result as string]);
+            showToast({ type: 'success', message: 'Photo attached.' });
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (err: any) {
+      showToast({ type: 'error', message: err?.message || 'Failed to upload photo.' });
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   const handleAddImage = () => {
     if (imageUrlInput.trim()) {
@@ -350,21 +384,34 @@ export const ListItemPage: React.FC = () => {
             Photos / Images <span className="text-rose-500">*</span>
           </label>
 
-          <div className="flex gap-2 mb-3">
-            <input
-              type="url"
-              value={imageUrlInput}
-              onChange={e => setImageUrlInput(e.target.value)}
-              placeholder="Paste photo URL or pick a sample preset below..."
-              className="flex-1 text-xs rounded-xl border border-slate-200 p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            />
-            <button
-              type="button"
-              onClick={handleAddImage}
-              className="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold hover:bg-slate-900 transition"
-            >
-              Add URL
-            </button>
+          <div className="flex flex-col sm:flex-row gap-2 mb-3">
+            <label className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-xl border border-indigo-200 cursor-pointer transition shrink-0">
+              <Upload className="w-4 h-4 text-indigo-600" />
+              <span>{isUploadingImage ? 'Uploading Photo...' : 'Upload Photo'}</span>
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                disabled={isUploadingImage}
+                onChange={handleFileUpload} 
+              />
+            </label>
+            <div className="flex-1 flex gap-2">
+              <input
+                type="url"
+                value={imageUrlInput}
+                onChange={e => setImageUrlInput(e.target.value)}
+                placeholder="Or paste photo URL..."
+                className="flex-1 text-xs rounded-xl border border-slate-200 p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+              <button
+                type="button"
+                onClick={handleAddImage}
+                className="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold hover:bg-slate-900 transition"
+              >
+                Add URL
+              </button>
+            </div>
           </div>
 
           {/* Preset Buttons for Demo Ease */}

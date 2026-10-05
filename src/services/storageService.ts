@@ -7,6 +7,8 @@ import {
   MOCK_CONVERSATIONS, MOCK_MESSAGES, MOCK_NOTIFICATIONS, 
   MOCK_NEED_REQUESTS, MOCK_CIRCLES, MOCK_REVIEWS, IMPACT_METRICS 
 } from '../data/mockData';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
+import { SupabaseService } from './supabaseService';
 
 const STORAGE_KEYS = {
   CURRENT_USER: 'bb_current_user',
@@ -76,6 +78,52 @@ export const StorageService = {
     }
   },
 
+  async syncWithSupabase() {
+    if (!isSupabaseConfigured) return;
+    try {
+      const health = await SupabaseService.checkConnection();
+      if (!health.connected || !health.tablesReady) return;
+
+      // 1. Sync remote items into storage cache
+      const remoteItems = await SupabaseService.getItems();
+      if (remoteItems && remoteItems.length > 0) {
+        saveToStorage(STORAGE_KEYS.ITEMS, remoteItems);
+      }
+
+      // 2. Sync need requests
+      const remoteNeeds = await SupabaseService.getNeedRequests();
+      if (remoteNeeds && remoteNeeds.length > 0) {
+        saveToStorage(STORAGE_KEYS.NEED_REQUESTS, remoteNeeds);
+      }
+
+      // 3. User specific sync
+      const currentUser = this.getCurrentUser();
+      if (currentUser && currentUser.id) {
+        const remoteRequests = await SupabaseService.getRequests();
+        if (remoteRequests && remoteRequests.length > 0) {
+          saveToStorage(STORAGE_KEYS.REQUESTS, remoteRequests);
+        }
+
+        const remoteNotifs = await SupabaseService.getNotifications(currentUser.id);
+        if (remoteNotifs && remoteNotifs.length > 0) {
+          saveToStorage(STORAGE_KEYS.NOTIFICATIONS, remoteNotifs);
+        }
+
+        const remoteWishlist = await SupabaseService.getWishlist(currentUser.id);
+        if (remoteWishlist && remoteWishlist.length > 0) {
+          saveToStorage(STORAGE_KEYS.WISHLIST, remoteWishlist);
+        }
+
+        const remoteConvs = await SupabaseService.getConversations();
+        if (remoteConvs && remoteConvs.length > 0) {
+          saveToStorage(STORAGE_KEYS.CONVERSATIONS, remoteConvs);
+        }
+      }
+    } catch (e) {
+      console.warn('Supabase sync notice:', e);
+    }
+  },
+
   resetToDefaults() {
     localStorage.setItem(STORAGE_KEYS.ALL_USERS, JSON.stringify(MOCK_USERS));
     localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(MOCK_ITEMS));
@@ -128,9 +176,36 @@ export const StorageService = {
       if (current && current.id === updated.id) {
         this.setCurrentUser(users[index]);
       }
+
+      if (isSupabaseConfigured) {
+        SupabaseService.updateProfile(updated.id, updated)
+          .catch((err: any) => console.warn('Supabase updateUser sync notice:', err));
+      }
+
       return users[index];
     }
-    throw new Error('User not found');
+    
+    // If not found in local array, create entry
+    const newUser: User = {
+      fullName: 'BorrowBuddy Member',
+      email: '',
+      university: 'XYZ Institute of Technology',
+      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(updated.id)}`,
+      rating: 5.0,
+      points: 20,
+      rank: calculateRank(updated.points ?? 20),
+      itemsLent: 0,
+      itemsBorrowed: 0,
+      successfulReturns: 0,
+      onTimeReturnRate: 100,
+      isUniversityVerified: false,
+      createdAt: new Date().toISOString().split('T')[0],
+      ...updated,
+      id: updated.id,
+    };
+    users.push(newUser);
+    saveToStorage(STORAGE_KEYS.ALL_USERS, users);
+    return newUser;
   },
 
   addPoints(userId: string, points: number, reason: string): User {
@@ -146,6 +221,11 @@ export const StorageService = {
       message: `You earned ${points} points for ${reason}. Current rank: ${updated.rank}.`,
       link: '/profile'
     });
+
+    if (isSupabaseConfigured) {
+      SupabaseService.addPoints(userId, points, reason)
+        .catch((err: any) => console.warn('Supabase addPoints sync notice:', err));
+    }
 
     return updated;
   },
@@ -174,6 +254,20 @@ export const StorageService = {
 
     // Gamification: +10 points for listing an item
     this.addPoints(item.ownerId, 10, 'listing a college item');
+
+    // Supabase background sync
+    if (isSupabaseConfigured) {
+      SupabaseService.createItem(item).then(remoteItem => {
+        if (remoteItem) {
+          const current = this.getItems();
+          const idx = current.findIndex(i => i.id === newItem.id);
+          if (idx >= 0) {
+            current[idx] = remoteItem;
+            saveToStorage(STORAGE_KEYS.ITEMS, current);
+          }
+        }
+      }).catch((err: any) => console.warn('Supabase createItem notice:', err));
+    }
 
     return newItem;
   },
@@ -292,6 +386,26 @@ export const StorageService = {
       link: '/requests',
     });
 
+    // Supabase background sync
+    if (isSupabaseConfigured) {
+      SupabaseService.createBorrowRequest({
+        itemId: data.itemId,
+        borrowerId: data.borrowerId,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        message: data.message
+      }).then(remoteReq => {
+        if (remoteReq) {
+          const current = this.getRequests();
+          const idx = current.findIndex(r => r.id === newRequest.id);
+          if (idx >= 0) {
+            current[idx] = remoteReq;
+            saveToStorage(STORAGE_KEYS.REQUESTS, current);
+          }
+        }
+      }).catch((err: any) => console.warn('Supabase createBorrowRequest notice:', err));
+    }
+
     return newRequest;
   },
 
@@ -314,16 +428,15 @@ export const StorageService = {
         borrowerId: req.borrowerId,
         requestId: req.id
       });
-      // If current date falls in range or starts soon, update status
       item.status = 'Borrowed';
       item.borrowCount = (item.borrowCount || 0) + 1;
       saveToStorage(STORAGE_KEYS.ITEMS, items);
     }
 
-    // Automatically create or ensure conversation between borrower and owner
+    // Automatically create conversation
     const conv = this.getOrCreateConversation(req.itemId, req.borrowerId, req.ownerId);
 
-    // Send initial automated system chat message
+    // Send initial automated chat message
     this.sendMessage({
       conversationId: conv.id,
       senderId: req.ownerId,
@@ -342,6 +455,12 @@ export const StorageService = {
 
     // Gamification points for owner: +20 points
     this.addPoints(req.ownerId, 20, 'successfully approving a borrowing request');
+
+    // Supabase sync
+    if (isSupabaseConfigured) {
+      SupabaseService.acceptBorrowRequest(requestId)
+        .catch((err: any) => console.warn('Supabase acceptBorrowRequest notice:', err));
+    }
 
     return req;
   },
@@ -363,6 +482,12 @@ export const StorageService = {
       link: '/explore'
     });
 
+    // Supabase sync
+    if (isSupabaseConfigured) {
+      SupabaseService.rejectBorrowRequest(requestId)
+        .catch((err: any) => console.warn('Supabase rejectBorrowRequest notice:', err));
+    }
+
     return req;
   },
 
@@ -383,7 +508,7 @@ export const StorageService = {
       item.bookedDateRanges = item.bookedDateRanges.filter(r => r.requestId !== req.id);
       saveToStorage(STORAGE_KEYS.ITEMS, items);
 
-      // Check if any wishlist subscribers need to be notified!
+      // Check if any wishlist subscribers need to be notified
       const wishlist = this.getWishlist();
       if (wishlist.includes(item.id)) {
         this.addNotification({
@@ -440,6 +565,12 @@ export const StorageService = {
       link: '/my-borrowings'
     });
 
+    // Supabase sync
+    if (isSupabaseConfigured) {
+      SupabaseService.markAsReturned(requestId)
+        .catch((err: any) => console.warn('Supabase markAsReturned notice:', err));
+    }
+
     return req;
   },
 
@@ -460,6 +591,13 @@ export const StorageService = {
       isAdded = true;
     }
     saveToStorage(STORAGE_KEYS.WISHLIST, list);
+
+    const currentUser = this.getCurrentUser();
+    if (isSupabaseConfigured && currentUser) {
+      SupabaseService.toggleWishlist(currentUser.id, itemId)
+        .catch((err: any) => console.warn('Supabase toggleWishlist notice:', err));
+    }
+
     return isAdded;
   },
 
@@ -479,7 +617,6 @@ export const StorageService = {
       ((c.borrowerId === borrowerId && c.ownerId === ownerId) ||
        (c.borrowerId === ownerId && c.ownerId === borrowerId))
     );
-
     if (existing) return existing;
 
     const item = this.getItemById(itemId);
@@ -489,13 +626,13 @@ export const StorageService = {
     const newConv: Conversation = {
       id: `conv-${Date.now()}`,
       itemId,
-      itemTitle: item?.title || 'Borrowed Item',
+      itemTitle: item?.title || 'Campus Item',
       itemImage: item?.images[0] || '',
       borrowerId,
       borrowerName: borrower?.fullName || 'Student',
       borrowerAvatar: borrower?.avatarUrl || '',
       ownerId,
-      ownerName: owner?.fullName || 'Owner',
+      ownerName: owner?.fullName || 'Student',
       ownerAvatar: owner?.avatarUrl || '',
       lastMessage: 'Conversation started',
       lastMessageTimestamp: new Date().toISOString(),
@@ -545,6 +682,11 @@ export const StorageService = {
       });
     }
 
+    if (isSupabaseConfigured) {
+      SupabaseService.sendMessage(data.conversationId, data.senderId, data.text)
+        .catch((err: any) => console.warn('Supabase sendMessage notice:', err));
+    }
+
     return newMsg;
   },
 
@@ -574,6 +716,10 @@ export const StorageService = {
       target.read = true;
       saveToStorage(STORAGE_KEYS.NOTIFICATIONS, all);
     }
+    if (isSupabaseConfigured) {
+      SupabaseService.markNotificationAsRead(id)
+        .catch((err: any) => console.warn('Supabase markNotificationAsRead notice:', err));
+    }
   },
 
   markAllNotificationsAsRead(userId: string): void {
@@ -582,6 +728,11 @@ export const StorageService = {
       if (n.userId === userId) n.read = true;
     });
     saveToStorage(STORAGE_KEYS.NOTIFICATIONS, all);
+
+    if (isSupabaseConfigured) {
+      SupabaseService.markAllNotificationsAsRead(userId)
+        .catch((err: any) => console.warn('Supabase markAllNotificationsAsRead notice:', err));
+    }
   },
 
   // Reviews
@@ -655,6 +806,20 @@ export const StorageService = {
       link: '/profile'
     });
 
+    if (isSupabaseConfigured) {
+      SupabaseService.submitReview({
+        requestId: data.requestId,
+        reviewerId: data.reviewerId,
+        revieweeId: data.revieweeId,
+        itemId: data.itemId,
+        itemTitle: data.itemTitle,
+        rating: data.rating,
+        categories: data.categories,
+        comment: data.comment,
+        role: data.role
+      }).catch((err: any) => console.warn('Supabase submitReview notice:', err));
+    }
+
     return newRev;
   },
 
@@ -674,6 +839,19 @@ export const StorageService = {
     };
     needs.unshift(newNeed);
     saveToStorage(STORAGE_KEYS.NEED_REQUESTS, needs);
+
+    if (isSupabaseConfigured) {
+      SupabaseService.createNeedRequest({
+        userId: data.userId,
+        title: data.title,
+        categoryId: data.categoryId,
+        requiredDate: data.requiredDate,
+        duration: data.duration,
+        pickupLocation: data.pickupLocation,
+        description: data.description
+      }).catch((err: any) => console.warn('Supabase createNeedRequest notice:', err));
+    }
+
     return newNeed;
   },
 
@@ -691,6 +869,11 @@ export const StorageService = {
         message: `${offererUser.fullName} offered to lend an item for "${need.title}": "${message}"`,
         link: '/need-something'
       });
+    }
+
+    if (isSupabaseConfigured) {
+      SupabaseService.offerToNeed(needId, offererUser, message)
+        .catch((err: any) => console.warn('Supabase offerToNeed notice:', err));
     }
   },
 
@@ -717,4 +900,3 @@ export const StorageService = {
     return getFromStorage(STORAGE_KEYS.IMPACT, IMPACT_METRICS);
   }
 };
-

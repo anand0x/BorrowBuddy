@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 
 export const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, resetPassword } = useAuth();
   const { showToast } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
@@ -16,6 +16,7 @@ export const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const from = (location.state as any)?.from?.pathname || '/explore';
 
@@ -50,18 +51,30 @@ export const LoginPage: React.FC = () => {
     setError(null);
   };
 
-  const handleForgotPassword = (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail.trim()) {
       showToast({ type: 'error', message: 'Please enter your email.' });
       return;
     }
+    setIsResettingPassword(true);
+    const res = await resetPassword(forgotEmail);
+    setIsResettingPassword(false);
     setIsForgotModalOpen(false);
-    showToast({
-      type: 'info',
-      title: 'Password Reset Link Sent',
-      message: `A password reset link was sent to ${forgotEmail}. (Prototype simulation)`
-    });
+
+    if (res.success) {
+      showToast({
+        type: 'info',
+        title: 'Password Reset Link Sent 📧',
+        message: `A password reset link was sent to ${forgotEmail}. Please check your inbox.`
+      });
+    } else {
+      showToast({
+        type: 'error',
+        title: 'Reset Failed',
+        message: res.error || 'Failed to send password reset email.'
+      });
+    }
   };
 
   return (
