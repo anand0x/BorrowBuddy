@@ -392,9 +392,12 @@ export const SupabaseService = {
     const item = await this.getItemById(data.itemId);
     if (!item) throw new Error('Item not found');
 
-    const start = new Date(data.startDate);
-    const end = new Date(data.endDate);
-    const durationDays = Math.max(1, Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    const start = new Date(`${data.startDate}T00:00:00Z`);
+    const end = new Date(`${data.endDate}T00:00:00Z`);
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start > end) {
+      throw new Error('Return date must be on or after the start date.');
+    }
+    const durationDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
     const totalAmount = item.borrowFee + item.deposit;
 
     const { data: newReq, error } = await client
@@ -438,27 +441,11 @@ export const SupabaseService = {
     const req = reqs.find(r => r.id === requestId);
     if (!req) throw new Error('Request not found');
 
-    // 1. Update request status
-    const { error: reqError } = await client
-      .from('borrow_requests')
-      .update({
-        status: 'Accepted',
-        accepted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', requestId);
-
-    if (reqError) throw new Error(reqError.message);
-
-    // 2. Mark item as borrowed
-    await client
-      .from('items')
-      .update({
-        status: 'Borrowed',
-        borrow_count: (req.borrowFee || 0) + 1,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', req.itemId);
+    // Lock and accept atomically; the database rejects overlapping approvals.
+    const { error: acceptError } = await client.rpc('accept_borrow_request', {
+      request_row_id: requestId,
+    });
+    if (acceptError) throw new Error(acceptError.message);
 
     // 3. Ensure conversation exists
     const conv = await this.getOrCreateConversation(req.itemId, req.borrowerId, req.ownerId);
@@ -514,48 +501,12 @@ export const SupabaseService = {
     const req = reqs.find(r => r.id === requestId);
     if (!req) throw new Error('Request not found');
 
-    const nowIso = new Date().toISOString();
+    const { error: returnError } = await client.rpc('mark_borrow_request_returned', {
+      request_row_id: requestId,
+    });
+    if (returnError) throw new Error(returnError.message);
 
-    // 1. Update request status
-    await client
-      .from('borrow_requests')
-      .update({
-        status: 'Returned',
-        returned_at: nowIso,
-        updated_at: nowIso,
-      })
-      .eq('id', requestId);
-
-    // 2. Make item available again
-    await client
-      .from('items')
-      .update({
-        status: 'Available',
-        updated_at: nowIso,
-      })
-      .eq('id', req.itemId);
-
-    // 3. Award points: +15 points to borrower for returning on time
-    await this.addPoints(req.borrowerId, 15, 'on-time return');
-
-    // 4. Update transaction counters on profiles
-    const borrower = await this.getProfile(req.borrowerId);
-    if (borrower) {
-      await client.from('profiles').update({
-        items_borrowed: borrower.itemsBorrowed + 1,
-        successful_returns: borrower.successfulReturns + 1,
-      }).eq('id', borrower.id);
-    }
-
-    const lender = await this.getProfile(req.ownerId);
-    if (lender) {
-      await client.from('profiles').update({
-        items_lent: lender.itemsLent + 1,
-      }).eq('id', lender.id);
-    }
-
-    // 5. Send notifications
-    await client.from('notifications').insert([
+    const { error: notificationError } = await client.from('notifications').insert([
       {
         user_id: req.ownerId,
         type: 'successful_return',
@@ -571,6 +522,19 @@ export const SupabaseService = {
         link: '/my-borrowings'
       }
     ]);
+    if (notificationError) throw new Error(notificationError.message);
+  },
+
+  async markAsActive(requestId: string): Promise<void> {
+    const client = getSupabase();
+    const { error } = await client
+      .from('borrow_requests')
+      .update({
+        status: 'Active',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+    if (error) throw new Error(error.message);
   },
 
   // ============================================================================

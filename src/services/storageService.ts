@@ -11,6 +11,7 @@ import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { SupabaseService } from './supabaseService';
 
 const STORAGE_KEYS = {
+  INITIALIZED: 'bb_initialized',
   CURRENT_USER: 'bb_current_user',
   ALL_USERS: 'bb_users',
   ITEMS: 'bb_items',
@@ -71,10 +72,14 @@ export const StorageService = {
     getFromStorage(STORAGE_KEYS.DISPUTES, [] as DisputeReport[]);
     getFromStorage(STORAGE_KEYS.IMPACT, IMPACT_METRICS);
     
-    // Set default user if not logged in
-    const current = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-    if (!current) {
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(MOCK_USERS[0]));
+    // Set default demo user only on initial first run
+    const isInitialized = localStorage.getItem(STORAGE_KEYS.INITIALIZED);
+    if (!isInitialized) {
+      localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
+      const current = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+      if (!current) {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(MOCK_USERS[0]));
+      }
     }
   },
 
@@ -125,6 +130,7 @@ export const StorageService = {
   },
 
   resetToDefaults() {
+    localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
     localStorage.setItem(STORAGE_KEYS.ALL_USERS, JSON.stringify(MOCK_USERS));
     localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(MOCK_ITEMS));
     localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(MOCK_REQUESTS));
@@ -278,6 +284,12 @@ export const StorageService = {
     if (index >= 0) {
       items[index] = { ...items[index], ...updates };
       saveToStorage(STORAGE_KEYS.ITEMS, items);
+
+      if (isSupabaseConfigured) {
+        SupabaseService.updateItem(id, updates)
+          .catch((err: any) => console.warn('Supabase updateItem sync notice:', err));
+      }
+
       return items[index];
     }
     throw new Error('Item not found');
@@ -286,6 +298,11 @@ export const StorageService = {
   deleteItem(id: string): void {
     const items = this.getItems().filter(i => i.id !== id);
     saveToStorage(STORAGE_KEYS.ITEMS, items);
+
+    if (isSupabaseConfigured) {
+      SupabaseService.deleteItem(id)
+        .catch((err: any) => console.warn('Supabase deleteItem sync notice:', err));
+    }
   },
 
   incrementItemViews(id: string): void {
@@ -294,6 +311,11 @@ export const StorageService = {
     if (item) {
       item.views = (item.views || 0) + 1;
       saveToStorage(STORAGE_KEYS.ITEMS, items);
+
+      if (isSupabaseConfigured) {
+        SupabaseService.incrementItemViews(id)
+          .catch((err: any) => console.warn('Supabase incrementItemViews sync notice:', err));
+      }
     }
   },
 
@@ -309,7 +331,7 @@ export const StorageService = {
     if (start > end) return false;
 
     // Check against active/approved booked ranges
-    for (const range of item.bookedDateRanges) {
+    for (const range of (item.bookedDateRanges || [])) {
       const bookedStart = new Date(range.startDate).getTime();
       const bookedEnd = new Date(range.endDate).getTime();
       // Overlap condition: start <= bookedEnd && end >= bookedStart

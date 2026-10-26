@@ -79,6 +79,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // Listen to cross-component user switch events for immediate sync
+  useEffect(() => {
+    const handleUserSwitched = () => {
+      refreshAppData();
+    };
+    window.addEventListener('borrowbuddy_user_switched', handleUserSwitched);
+    return () => {
+      window.removeEventListener('borrowbuddy_user_switched', handleUserSwitched);
+    };
+  }, [refreshAppData]);
+
   // Sync data and setup Realtime subscriptions
   useEffect(() => {
     // Initial sync

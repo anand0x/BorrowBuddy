@@ -28,12 +28,15 @@ export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { setSearchQuery, setSelectedCategory } = useApp();
   const [searchInput, setSearchInput] = useState('');
+  const [nearbyTab, setNearbyTab] = useState<'popular' | 'recent'>('popular');
 
   const items = StorageService.getItems();
   const popularItems = items.slice(0, 4);
   const recentItems = [...items].reverse().slice(0, 4);
   const sosItems = items.filter(i => i.isUrgentSOS).slice(0, 3);
   const circles = StorageService.getCircles();
+
+  const displayedNearbyItems = nearbyTab === 'popular' ? popularItems : recentItems;
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +99,7 @@ export const LandingPage: React.FC = () => {
                 type="text"
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
-                placeholder="What do you need today? (Calculators, drafters, lab coats, books...)"
+                placeholder="What do you need to borrow?"
                 className="w-full bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
               <button
@@ -208,6 +211,61 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* AVAILABLE NEAR YOU (PRIORITIZED PEER LISTINGS RIGHT AFTER CATEGORIES) */}
+      <section className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+              Available Near You
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              Verified peer listings ready for campus pickup at Central Library, Canteen & Department blocks
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setNearbyTab('popular')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  nearbyTab === 'popular'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Popular on Campus
+              </button>
+              <button
+                type="button"
+                onClick={() => setNearbyTab('recent')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  nearbyTab === 'recent'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Recently Listed
+              </button>
+            </div>
+
+            <Link
+              to="/explore"
+              className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 ml-2"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {displayedNearbyItems.map(item => (
+            <ItemCard key={item.id} item={item} />
+          ))}
+        </div>
+      </section>
+
       {/* BORROWBUDDY SOS (EMERGENCY / URGENT BORROWING) */}
       <section className="py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="rounded-3xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-6 sm:p-8 text-white shadow-soft-xl relative overflow-hidden">
@@ -253,7 +311,7 @@ export const LandingPage: React.FC = () => {
                 className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-xs transition text-white"
               >
                 <img
-                  src={item.images[0]}
+                  src={item.images?.[0] || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80'}
                   alt={item.title}
                   className="w-12 h-12 rounded-lg object-cover bg-white/20 shrink-0"
                 />
@@ -271,57 +329,50 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* HOW BORROWBUDDY WORKS (DESIGN THINKING CONNECTION) */}
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold mb-3">
+      {/* HOW BORROWBUDDY WORKS (CONDENSED 4-STEP CAMPUS FLOW) */}
+      <section className="py-14 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="text-center max-w-2xl mx-auto mb-10">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold mb-2">
             <Repeat className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Design Thinking Flow</span>
+            <span>Campus Sharing Cycle</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             How BorrowBuddy Works
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-2">
-            A 5-step circular student economy designed to eliminate redundant spending and foster campus trust.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Simple 4-step circular student economy designed to eliminate redundant spending
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             {
               step: '1',
-              title: '1. Find',
-              desc: 'Search for what you need: scientific calculators, drafters, or textbooks by campus proximity.',
+              title: '1. Find Near You',
+              desc: 'Search calculators, drafters, or books available from peers in your campus block.',
               icon: Search,
               color: 'text-indigo-600 bg-indigo-50 border-indigo-200'
             },
             {
               step: '2',
-              title: '2. Request',
-              desc: 'Choose your borrowing dates with live calendar conflict checking and send a request to the owner.',
+              title: '2. Request & Book',
+              desc: 'Select borrowing dates on the live availability calendar and message the owner.',
               icon: Clock,
               color: 'text-brand-600 bg-brand-50 border-brand-200'
             },
             {
               step: '3',
-              title: '3. Borrow',
-              desc: 'Meet safely at predefined campus landmarks like the Central Library, Canteen or Main Gate.',
+              title: '3. Campus Handover',
+              desc: 'Meet safely at predefined campus spots like the Central Library or Canteen.',
               icon: MapPin,
               color: 'text-teal-600 bg-teal-50 border-teal-200'
             },
             {
               step: '4',
-              title: '4. Return',
-              desc: 'Use the item during your exams or project and return it on time with automatic reminder alerts.',
+              title: '4. Return & Earn Points',
+              desc: 'Return the item on time, rate your peer, and build your campus reputation rank.',
               icon: CheckCircle2,
               color: 'text-emerald-600 bg-emerald-50 border-emerald-200'
-            },
-            {
-              step: '5',
-              title: '5. Share Again',
-              desc: 'Rate the experience, build your buddy trust score, and help the next college peer.',
-              icon: HeartHandshake,
-              color: 'text-amber-600 bg-amber-50 border-amber-200'
             }
           ].map(s => {
             const Icon = s.icon;
@@ -330,8 +381,8 @@ export const LandingPage: React.FC = () => {
                 key={s.step}
                 className="flex flex-col p-5 rounded-2xl bg-white border border-slate-200/80 shadow-soft relative group hover:shadow-soft-lg hover:border-indigo-300 transition-all"
               >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border mb-3 shadow-2xs ${s.color}`}>
-                  <Icon className="w-6 h-6 stroke-[2]" />
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center border mb-3 shadow-2xs ${s.color}`}>
+                  <Icon className="w-5 h-5 stroke-[2]" />
                 </div>
                 <h4 className="font-extrabold text-sm text-slate-800 mb-1">{s.title}</h4>
                 <p className="text-xs text-slate-500 leading-relaxed">{s.desc}</p>
@@ -341,54 +392,27 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* POPULAR NEAR YOU */}
-      <section className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-              Popular Near You
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Available at Central Library and campus academic blocks
-            </p>
-          </div>
-          <Link
-            to="/explore"
-            className="text-xs sm:text-sm font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
-          >
-            <span>See More</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {popularItems.map(item => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </div>
-      </section>
-
       {/* BUDDY CIRCLES HIGHLIGHT */}
-      <section className="py-12 bg-indigo-900 text-white rounded-3xl mx-4 sm:mx-6 lg:mx-8 px-6 sm:px-10 my-8 shadow-soft-xl">
+      <section className="py-10 bg-indigo-900 text-white rounded-3xl mx-4 sm:mx-6 lg:mx-8 px-6 sm:px-10 my-6 shadow-soft-xl">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-800 text-indigo-200 text-xs font-semibold mb-2">
                 <Users className="w-3.5 h-3.5" />
                 <span>Buddy Circles</span>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight">
                 Borrow Within Your Campus Groups
               </h3>
-              <p className="text-xs sm:text-sm text-indigo-200 mt-1 max-w-xl">
-                Browse items shared specifically within your hostel wing, engineering branch, or study club.
+              <p className="text-xs text-indigo-200/90 mt-1 max-w-xl">
+                Browse tools and books shared specifically inside your hostel wing, engineering branch, or study club.
               </p>
             </div>
             <Link
               to="/explore"
-              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition"
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition"
             >
-              Explore All Circles
+              Explore Circles
             </Link>
           </div>
 
@@ -396,49 +420,22 @@ export const LandingPage: React.FC = () => {
             {circles.map(circle => (
               <div
                 key={circle.id}
-                className="p-5 rounded-2xl bg-indigo-950/60 border border-indigo-800/60 hover:border-indigo-500/80 transition group"
+                className="p-4 rounded-2xl bg-indigo-950/60 border border-indigo-800/60 hover:border-indigo-500/80 transition group"
               >
-                <div className="text-3xl mb-2">{circle.icon}</div>
+                <div className="text-2xl mb-1.5">{circle.icon}</div>
                 <h4 className="font-bold text-sm text-white group-hover:text-indigo-300 transition-colors">
                   {circle.name}
                 </h4>
-                <p className="text-xs text-indigo-200/80 mt-1.5 line-clamp-2">
+                <p className="text-xs text-indigo-200/80 mt-1 line-clamp-2">
                   {circle.description}
                 </p>
-                <div className="mt-4 pt-3 border-t border-indigo-900 flex items-center justify-between text-xs text-indigo-300">
+                <div className="mt-3 pt-2.5 border-t border-indigo-900/80 flex items-center justify-between text-xs text-indigo-300">
                   <span>{circle.membersCount} members</span>
                   <span className="font-semibold text-emerald-400">{circle.itemCount} items</span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* RECENTLY LISTED */}
-      <section className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-              Recently Listed Items
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Fresh additions from fellow students ready to lend
-            </p>
-          </div>
-          <Link
-            to="/explore"
-            className="text-xs sm:text-sm font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
-          >
-            <span>Browse All</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {recentItems.map(item => (
-            <ItemCard key={item.id} item={item} />
-          ))}
         </div>
       </section>
 
@@ -454,7 +451,7 @@ export const LandingPage: React.FC = () => {
               BorrowBuddy Impact Dashboard
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-2">
-              "Every borrow is one less unnecessary purchase." See the collective difference our campus makes.
+              "Every borrow is one less unnecessary purchase." Estimated metrics from campus sharing activity.
             </p>
           </div>
 
@@ -497,7 +494,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <p className="text-center text-[11px] text-slate-400 mt-6 italic">
-            *Note: {IMPACT_METRICS.disclaimer}
+            *Simulation & Estimated Figures: {IMPACT_METRICS.disclaimer}
           </p>
         </div>
       </section>

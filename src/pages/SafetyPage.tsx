@@ -116,6 +116,55 @@ export const SafetyPage: React.FC = () => {
         </div>
       </div>
 
+      {/* ESCROW & DEPOSIT PROTECTION EXPLAINED */}
+      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-soft">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+          <div>
+            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-wider">
+              Financial Safety & Protection
+            </span>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight mt-2">
+              How Security Deposits & Escrow Work
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-xl">
+              Deposits prevent loss and ensure items are returned in good working condition.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              100% Refundable Guarantee
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs text-slate-600">
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+            <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">1</span>
+            <h4 className="font-bold text-slate-800 text-sm">Protected in Escrow</h4>
+            <p className="leading-relaxed">
+              When a borrower pays a security deposit, funds are never sent directly to the lender. They are locked securely in campus escrow until safe handover return.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+            <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">2</span>
+            <h4 className="font-bold text-slate-800 text-sm">Condition Inspection</h4>
+            <p className="leading-relaxed">
+              Borrowers and owners inspect the equipment during handover and return. If the item is returned on time without new damage, deposit release is triggered.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+            <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">3</span>
+            <h4 className="font-bold text-slate-800 text-sm">Instant Deposit Release</h4>
+            <p className="leading-relaxed">
+              Once marked returned, 100% of the deposit returns to the borrower immediately. If a dispute is filed, funds remain frozen until student moderator review.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* DESIGNATED PICKUP LOCATIONS DIRECTORY */}
       <div id="locations" className="bg-slate-900 text-white rounded-3xl p-8 sm:p-10 shadow-soft-xl">
         <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight mb-2">

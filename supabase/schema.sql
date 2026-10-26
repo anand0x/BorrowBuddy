@@ -305,13 +305,202 @@ CREATE POLICY "Participants can view their borrow requests"
 CREATE POLICY "Borrowers can create requests" 
   ON public.borrow_requests FOR INSERT 
   TO authenticated 
-  WITH CHECK (auth.uid() = borrower_id);
+  WITH CHECK (
+    auth.uid() = borrower_id
+    AND borrower_id <> owner_id
+    AND status = 'Pending'
+    AND EXISTS (
+      SELECT 1 FROM public.items
+      WHERE items.id = borrow_requests.item_id
+        AND items.owner_id = borrow_requests.owner_id
+    )
+  );
 
 -- Participants (owner or borrower) can update request state
 CREATE POLICY "Participants can update borrow requests" 
   ON public.borrow_requests FOR UPDATE 
   TO authenticated 
-  USING (auth.uid() = borrower_id OR auth.uid() = owner_id);
+  USING (auth.uid() = borrower_id OR auth.uid() = owner_id)
+  WITH CHECK (auth.uid() = borrower_id OR auth.uid() = owner_id);
+
+-- Participants may only perform the transitions allowed for their role. Request
+-- identity, dates and money fields are immutable after creation.
+CREATE OR REPLACE FUNCTION public.guard_borrow_request_update()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.item_id IS DISTINCT FROM OLD.item_id
+    OR NEW.borrower_id IS DISTINCT FROM OLD.borrower_id
+    OR NEW.owner_id IS DISTINCT FROM OLD.owner_id
+    OR NEW.start_date IS DISTINCT FROM OLD.start_date
+    OR NEW.end_date IS DISTINCT FROM OLD.end_date
+    OR NEW.duration_days IS DISTINCT FROM OLD.duration_days
+    OR NEW.message IS DISTINCT FROM OLD.message
+    OR NEW.borrow_fee IS DISTINCT FROM OLD.borrow_fee
+    OR NEW.deposit IS DISTINCT FROM OLD.deposit
+    OR NEW.total_amount IS DISTINCT FROM OLD.total_amount
+    OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'Borrow request details cannot be changed';
+  END IF;
+
+  IF NEW.status IS DISTINCT FROM OLD.status THEN
+    IF auth.uid() = OLD.owner_id AND OLD.status = 'Pending'
+      AND NEW.status IN ('Accepted', 'Rejected') THEN
+      NULL;
+    ELSIF auth.uid() = OLD.borrower_id
+      AND OLD.status IN ('Accepted', 'Active', 'Upcoming')
+      AND NEW.status = 'Returned' THEN
+      NULL;
+    ELSE
+      RAISE EXCEPTION 'This status transition is not allowed';
+    END IF;
+  END IF;
+
+  IF NEW.accepted_at IS DISTINCT FROM OLD.accepted_at
+    AND NOT (auth.uid() = OLD.owner_id AND OLD.status = 'Pending'
+      AND NEW.status = 'Accepted') THEN
+    RAISE EXCEPTION 'Only acceptance can set the accepted timestamp';
+  END IF;
+  IF NEW.returned_at IS DISTINCT FROM OLD.returned_at
+    AND NOT (auth.uid() = OLD.borrower_id
+      AND OLD.status IN ('Accepted', 'Active', 'Upcoming')
+      AND NEW.status = 'Returned') THEN
+    RAISE EXCEPTION 'Only a return can set the returned timestamp';
+  END IF;
+
+  IF NEW.borrower_rated IS DISTINCT FROM OLD.borrower_rated
+    AND auth.uid() IS DISTINCT FROM OLD.borrower_id THEN
+    RAISE EXCEPTION 'Only the borrower can update borrower rating status';
+  END IF;
+  IF NEW.owner_rated IS DISTINCT FROM OLD.owner_rated
+    AND auth.uid() IS DISTINCT FROM OLD.owner_id THEN
+    RAISE EXCEPTION 'Only the owner can update owner rating status';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS guard_borrow_request_update ON public.borrow_requests;
+CREATE TRIGGER guard_borrow_request_update
+  BEFORE UPDATE ON public.borrow_requests
+  FOR EACH ROW EXECUTE FUNCTION public.guard_borrow_request_update();
+
+-- State changes and item locking must happen together to prevent two overlapping
+-- pending requests from both being accepted.
+CREATE OR REPLACE FUNCTION public.accept_borrow_request(request_row_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+  request_row public.borrow_requests%ROWTYPE;
+BEGIN
+  SELECT * INTO request_row
+  FROM public.borrow_requests
+  WHERE id = request_row_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Request not found';
+  END IF;
+  IF auth.uid() IS DISTINCT FROM request_row.owner_id THEN
+    RAISE EXCEPTION 'Only the item owner can accept this request';
+  END IF;
+  IF request_row.status <> 'Pending' THEN
+    RAISE EXCEPTION 'Only pending requests can be accepted';
+  END IF;
+
+  -- Serialize requests for one item before checking overlaps.
+  PERFORM 1 FROM public.items WHERE id = request_row.item_id FOR UPDATE;
+  IF EXISTS (
+    SELECT 1 FROM public.borrow_requests other_request
+    WHERE other_request.item_id = request_row.item_id
+      AND other_request.id <> request_row.id
+      AND other_request.status IN ('Accepted', 'Active', 'Upcoming')
+      AND request_row.start_date <= other_request.end_date
+      AND request_row.end_date >= other_request.start_date
+  ) THEN
+    RAISE EXCEPTION 'These dates overlap an accepted reservation';
+  END IF;
+
+  UPDATE public.borrow_requests
+  SET status = 'Accepted', accepted_at = NOW(), updated_at = NOW()
+  WHERE id = request_row.id;
+
+  UPDATE public.items
+  SET status = 'Borrowed', borrow_count = borrow_count + 1, updated_at = NOW()
+  WHERE id = request_row.item_id;
+END;
+$$;
+
+-- Borrowers can complete returns without direct permission to edit the owner's
+-- item or profile. The request and all counters change in one transaction.
+CREATE OR REPLACE FUNCTION public.mark_borrow_request_returned(request_row_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  request_row public.borrow_requests%ROWTYPE;
+  next_points INTEGER;
+  next_rank TEXT;
+BEGIN
+  SELECT * INTO request_row
+  FROM public.borrow_requests
+  WHERE id = request_row_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Request not found';
+  END IF;
+  IF auth.uid() IS DISTINCT FROM request_row.borrower_id THEN
+    RAISE EXCEPTION 'Only the borrower can mark this item returned';
+  END IF;
+  IF request_row.status NOT IN ('Accepted', 'Active', 'Upcoming') THEN
+    RAISE EXCEPTION 'Only an active borrow request can be returned';
+  END IF;
+
+  PERFORM 1 FROM public.items WHERE id = request_row.item_id FOR UPDATE;
+
+  UPDATE public.borrow_requests
+  SET status = 'Returned', returned_at = NOW(), updated_at = NOW()
+  WHERE id = request_row.id;
+
+  UPDATE public.items
+  SET status = 'Available', updated_at = NOW()
+  WHERE id = request_row.item_id;
+
+  UPDATE public.profiles
+  SET items_borrowed = items_borrowed + 1,
+      successful_returns = successful_returns + 1,
+      points = points + 15,
+      updated_at = NOW()
+  WHERE id = request_row.borrower_id
+  RETURNING points INTO next_points;
+
+  next_rank := CASE
+    WHEN next_points >= 500 THEN 'Campus Legend'
+    WHEN next_points >= 350 THEN 'Super Buddy'
+    WHEN next_points >= 150 THEN 'Helpful Buddy'
+    ELSE 'New Buddy'
+  END;
+  UPDATE public.profiles SET rank = next_rank, updated_at = NOW()
+  WHERE id = request_row.borrower_id;
+
+  UPDATE public.profiles
+  SET items_lent = items_lent + 1, updated_at = NOW()
+  WHERE id = request_row.owner_id;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.mark_borrow_request_returned(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.mark_borrow_request_returned(UUID) TO authenticated;
 
 -- 4.6 CONVERSATIONS POLICIES
 CREATE POLICY "Conversation participants can view their chats" 

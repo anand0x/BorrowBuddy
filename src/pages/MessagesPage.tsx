@@ -32,14 +32,23 @@ export const MessagesPage: React.FC = () => {
   if (!user) return null;
 
   const allConversations = StorageService.getConversations();
-  const userConversations = allConversations.filter(c => c.borrowerId === user.id || c.ownerId === user.id);
+  const userConversations = React.useMemo(() => {
+    return allConversations.filter(c => c.borrowerId === user.id || c.ownerId === user.id);
+  }, [user.id, allConversations.length]);
 
-  // Set default active conversation if none selected
+  // Sync active conversation when user switches or URL query param changes
   useEffect(() => {
-    if (!activeConvId && userConversations.length > 0) {
-      setActiveConvId(userConversations[0].id);
+    const paramConv = searchParams.get('conv');
+    if (paramConv && userConversations.some(c => c.id === paramConv)) {
+      setActiveConvId(paramConv);
+    } else if (userConversations.length > 0) {
+      if (!activeConvId || !userConversations.some(c => c.id === activeConvId)) {
+        setActiveConvId(userConversations[0].id);
+      }
+    } else {
+      setActiveConvId(null);
     }
-  }, [activeConvId, userConversations]);
+  }, [user.id, userConversations, searchParams]);
 
   const activeConversation = userConversations.find(c => c.id === activeConvId);
   const messages = activeConversation ? StorageService.getMessages(activeConversation.id) : [];

@@ -65,9 +65,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, featured = false }) =>
         </button>
 
         {/* Condition tag */}
-        <div className="absolute bottom-2.5 left-3 z-10">
-          <span className="text-[11px] font-medium bg-slate-900/70 backdrop-blur-xs text-white px-2 py-0.5 rounded-md">
-            Condition: {item.condition}
+        <div className="absolute bottom-2.5 left-3 z-10 flex items-center gap-1.5">
+          <span className="text-[11px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-2 py-0.5 rounded-md shadow-xs">
+            {item.condition} Condition
           </span>
         </div>
       </div>
@@ -76,65 +76,77 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, featured = false }) =>
       <div className="flex flex-col flex-1 p-4">
         {/* Category & Location */}
         <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
-          <span className="font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+          <span className="font-semibold text-indigo-700 bg-indigo-50/90 px-2 py-0.5 rounded-md text-[11px]">
             {item.categoryName}
           </span>
-          <span className="flex items-center gap-1 text-slate-500 truncate max-w-[130px]">
-            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+          <span className="flex items-center gap-1 text-slate-500 text-[11px] font-medium truncate max-w-[130px]" title={item.pickupLocation}>
+            <MapPin className="w-3 h-3 text-indigo-500 shrink-0" />
             <span className="truncate">{item.pickupLocation}</span>
           </span>
         </div>
 
         {/* Title */}
         <Link to={`/item/${item.id}`} className="group-hover:text-indigo-600 transition-colors">
-          <h3 className="font-semibold text-slate-800 text-sm md:text-base line-clamp-2 leading-snug mb-2">
+          <h3 className="font-bold text-slate-800 text-sm sm:text-base line-clamp-2 leading-snug mb-2">
             {item.title}
           </h3>
         </Link>
 
         {/* Owner Info & Rating */}
         <div className="flex items-center justify-between py-2 border-y border-slate-100 mb-3 text-xs">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <img
               src={item.ownerAvatar}
               alt={item.ownerName}
-              className="w-5 h-5 rounded-full object-cover ring-1 ring-slate-200"
+              className="w-5 h-5 rounded-full object-cover ring-1 ring-slate-200 shrink-0"
             />
-            <span className="text-slate-600 font-medium truncate max-w-[110px]">
+            <span className="text-slate-700 font-semibold truncate max-w-[100px] sm:max-w-[120px]">
               {item.ownerName}
             </span>
           </div>
-          <div className="flex items-center gap-1 text-amber-500 font-semibold">
+          <div className="flex items-center gap-1 text-amber-500 font-semibold shrink-0">
             <RatingStars rating={item.ownerRating} size="sm" />
             <span className="text-slate-700 text-xs ml-0.5">{item.ownerRating}</span>
           </div>
         </div>
 
         {/* Pricing & Savings */}
-        <div className="mt-auto pt-1 flex items-end justify-between">
-          <div>
-            <div className="text-[11px] text-slate-400">Borrow Fee</div>
-            <div className="text-base font-bold text-slate-900">
-              {item.borrowFee === 0 ? (
-                <span className="text-emerald-600">FREE</span>
-              ) : (
-                formatCurrency(item.borrowFee)
-              )}
+        <div className="mt-auto pt-1 flex flex-col gap-2">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Borrow Fee</div>
+              <div className="text-base sm:text-lg font-extrabold text-slate-900 leading-tight">
+                {item.borrowFee === 0 ? (
+                  <span className="text-emerald-600 font-black">FREE</span>
+                ) : (
+                  formatCurrency(item.borrowFee)
+                )}
+              </div>
             </div>
-            {item.deposit > 0 && (
-              <div className="text-[10px] text-slate-500">
-                Deposit: {formatCurrency(item.deposit)} (Refundable)
+
+            {savings > 0 && (
+              <div className="text-right">
+                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md inline-block">
+                  Saves ~{formatCurrency(savings)}
+                </span>
               </div>
             )}
           </div>
 
-          <div className="text-right">
-            <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded block">
-              Saves ~{formatCurrency(savings)}
-            </span>
+          {/* Refundable deposit clarification */}
+          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1.5 border-t border-slate-100/80">
+            {item.deposit > 0 ? (
+              <span className="inline-flex items-center gap-1 text-slate-600 font-medium">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>{formatCurrency(item.deposit)} deposit <span className="text-emerald-600 font-semibold">(Refundable)</span></span>
+              </span>
+            ) : (
+              <span className="text-slate-400">Zero deposit required</span>
+            )}
+
             <Link
               to={`/item/${item.id}`}
-              className="mt-1.5 inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-xs"
+              className="inline-flex items-center justify-center px-3 py-1.5 min-h-[36px] text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-xs"
             >
               View Details
             </Link>

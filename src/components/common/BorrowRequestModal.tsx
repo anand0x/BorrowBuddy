@@ -23,14 +23,23 @@ export const BorrowRequestModal: React.FC<BorrowRequestModalProps> = ({
   const { user } = useAuth();
   const { showToast, refreshAppData } = useApp();
 
+  const formatLocalDate = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const todayStr = formatLocalDate(new Date());
+
   // Default dates: tomorrow to day after tomorrow (2 days)
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const dayAfter = new Date();
   dayAfter.setDate(dayAfter.getDate() + 3);
 
-  const [startDate, setStartDate] = useState(tomorrow.toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(dayAfter.toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(formatLocalDate(tomorrow));
+  const [endDate, setEndDate] = useState(formatLocalDate(dayAfter));
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +80,12 @@ export const BorrowRequestModal: React.FC<BorrowRequestModalProps> = ({
       return;
     }
 
-    if (new Date(startDate) > new Date(endDate)) {
+    if (startDate < todayStr) {
+      setError('Start date cannot be in the past.');
+      return;
+    }
+
+    if (startDate > endDate) {
       setError('Return date must be on or after start date.');
       return;
     }
@@ -137,7 +151,7 @@ export const BorrowRequestModal: React.FC<BorrowRequestModalProps> = ({
         {/* Item summary banner */}
         <div className="flex items-center gap-3 p-3 mt-4 rounded-2xl bg-slate-50 border border-slate-100">
           <img
-            src={item.images[0]}
+            src={item.images?.[0] || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80'}
             alt={item.title}
             className="w-14 h-14 rounded-xl object-cover ring-1 ring-slate-200"
           />
@@ -184,6 +198,7 @@ export const BorrowRequestModal: React.FC<BorrowRequestModalProps> = ({
               <input
                 type="date"
                 required
+                min={todayStr}
                 value={startDate}
                 onChange={e => setStartDate(e.target.value)}
                 className="w-full text-xs rounded-xl border border-slate-200 p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -196,6 +211,7 @@ export const BorrowRequestModal: React.FC<BorrowRequestModalProps> = ({
               <input
                 type="date"
                 required
+                min={startDate || todayStr}
                 value={endDate}
                 onChange={e => setEndDate(e.target.value)}
                 className="w-full text-xs rounded-xl border border-slate-200 p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"

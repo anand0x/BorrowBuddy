@@ -254,6 +254,139 @@ export const ExplorePage: React.FC = () => {
           ))}
         </div>
 
+        {/* Active Filter Chips */}
+        {hasActiveFilters && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-slate-400 font-medium">Active filters:</span>
+            
+            {searchTerm && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-medium">
+                Keyword: "{searchTerm}"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSearchQuery('');
+                  }}
+                  className="hover:text-rose-500"
+                  aria-label="Remove search filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {categoryFilter !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 font-medium">
+                Category: {CATEGORIES.find(c => c.id === categoryFilter)?.name || categoryFilter}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryFilter('all');
+                    setSelectedCategory('all');
+                  }}
+                  className="hover:text-rose-500"
+                  aria-label="Remove category filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {availabilityFilter !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-medium">
+                Status: {availabilityFilter}
+                <button
+                  type="button"
+                  onClick={() => setAvailabilityFilter('all')}
+                  className="hover:text-rose-500"
+                  aria-label="Remove status filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {locationFilter !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-medium">
+                Spot: {locationFilter}
+                <button
+                  type="button"
+                  onClick={() => setLocationFilter('all')}
+                  className="hover:text-rose-500"
+                  aria-label="Remove location filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {conditionFilter !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-medium">
+                Condition: {conditionFilter}
+                <button
+                  type="button"
+                  onClick={() => setConditionFilter('all')}
+                  className="hover:text-rose-500"
+                  aria-label="Remove condition filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {costFilter === 'free' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium">
+                Free Borrowing
+                <button
+                  type="button"
+                  onClick={() => setCostFilter('all')}
+                  className="hover:text-rose-500"
+                  aria-label="Remove free filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {costFilter === 'low-deposit' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-medium">
+                Low Deposit (≤ ₹100)
+                <button
+                  type="button"
+                  onClick={() => setCostFilter('all')}
+                  className="hover:text-rose-500"
+                  aria-label="Remove deposit filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {sosOnly && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-semibold">
+                ⚡ SOS Urgent
+                <button
+                  type="button"
+                  onClick={() => setSosOnly(false)}
+                  className="hover:text-rose-500"
+                  aria-label="Remove SOS filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-indigo-600 hover:text-indigo-800 font-semibold hover:underline ml-1"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+
         {/* Interactive Campus Map View */}
         {showMap && (
           <div className="mt-5 animate-in fade-in slide-in-from-top-3 duration-200">
@@ -269,11 +402,7 @@ export const ExplorePage: React.FC = () => {
       {/* Main Content: Sidebar Filters + Items Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
         {/* Desktop Sidebar Filters */}
-        <aside
-          className={`lg:block bg-white p-5 rounded-3xl border border-slate-200/80 shadow-soft space-y-6 ${
-            isMobileFilterOpen ? 'block' : 'hidden'
-          }`}
-        >
+        <aside className="hidden lg:block bg-white p-5 rounded-3xl border border-slate-200/80 shadow-soft space-y-6">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
@@ -282,7 +411,7 @@ export const ExplorePage: React.FC = () => {
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Reset All</span>
@@ -297,7 +426,7 @@ export const ExplorePage: React.FC = () => {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
-                  name="availability"
+                  name="desktop-availability"
                   checked={availabilityFilter === 'all'}
                   onChange={() => setAvailabilityFilter('all')}
                   className="text-indigo-600 focus:ring-indigo-500"
@@ -307,7 +436,7 @@ export const ExplorePage: React.FC = () => {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
-                  name="availability"
+                  name="desktop-availability"
                   checked={availabilityFilter === 'Available'}
                   onChange={() => setAvailabilityFilter('Available')}
                   className="text-indigo-600 focus:ring-indigo-500"
@@ -319,7 +448,7 @@ export const ExplorePage: React.FC = () => {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
-                  name="availability"
+                  name="desktop-availability"
                   checked={availabilityFilter === 'Borrowed'}
                   onChange={() => setAvailabilityFilter('Borrowed')}
                   className="text-indigo-600 focus:ring-indigo-500"
@@ -357,9 +486,9 @@ export const ExplorePage: React.FC = () => {
                   key={cond}
                   type="button"
                   onClick={() => setConditionFilter(cond)}
-                  className={`py-1.5 rounded-lg font-medium transition text-[11px] ${
+                  className={`py-1.5 rounded-lg font-medium transition text-[11px] cursor-pointer ${
                     conditionFilter === cond
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-indigo-600 text-white shadow-xs font-bold'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -376,7 +505,7 @@ export const ExplorePage: React.FC = () => {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
-                  name="cost"
+                  name="desktop-cost"
                   checked={costFilter === 'all'}
                   onChange={() => setCostFilter('all')}
                   className="text-indigo-600 focus:ring-indigo-500"
@@ -386,7 +515,7 @@ export const ExplorePage: React.FC = () => {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
-                  name="cost"
+                  name="desktop-cost"
                   checked={costFilter === 'free'}
                   onChange={() => setCostFilter('free')}
                   className="text-indigo-600 focus:ring-indigo-500"
@@ -396,7 +525,7 @@ export const ExplorePage: React.FC = () => {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
-                  name="cost"
+                  name="desktop-cost"
                   checked={costFilter === 'low-deposit'}
                   onChange={() => setCostFilter('low-deposit')}
                   className="text-indigo-600 focus:ring-indigo-500"
@@ -406,6 +535,148 @@ export const ExplorePage: React.FC = () => {
             </div>
           </div>
         </aside>
+
+        {/* Mobile Filter Modal Sheet */}
+        {isMobileFilterOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden bg-black/60 backdrop-blur-xs flex flex-col justify-end">
+            <div 
+              className="bg-white rounded-t-3xl max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200 shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Sheet Header */}
+              <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
+                  <h3 className="font-bold text-sm text-slate-800">Filter Items</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Sheet Body */}
+              <div className="p-4 space-y-5 overflow-y-auto">
+                {/* Availability */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">Availability</label>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    {(['all', 'Available', 'Borrowed'] as const).map(st => (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => setAvailabilityFilter(st)}
+                        className={`py-2 px-2.5 rounded-xl font-semibold text-xs border text-center transition ${
+                          availabilityFilter === st
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            : 'bg-white border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        {st === 'all' ? 'All' : st === 'Available' ? '🟢 Available' : '🟡 Borrowed'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Campus Pickup Spot */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">Campus Pickup Spot</label>
+                  <select
+                    value={locationFilter}
+                    onChange={e => setLocationFilter(e.target.value as any)}
+                    className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  >
+                    <option value="all">Any Campus Location</option>
+                    <option value="Central Library">Central Library</option>
+                    <option value="Canteen">Canteen</option>
+                    <option value="Main Gate">Main Gate</option>
+                    <option value="Department Block">Department Block</option>
+                    <option value="Hostel Reception">Hostel Reception</option>
+                  </select>
+                </div>
+
+                {/* Condition */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">Item Condition</label>
+                  <div className="grid grid-cols-4 gap-1.5 text-xs">
+                    {(['all', 'Excellent', 'Good', 'Used'] as const).map(cond => (
+                      <button
+                        key={cond}
+                        type="button"
+                        onClick={() => setConditionFilter(cond)}
+                        className={`py-2 rounded-xl font-semibold transition text-xs ${
+                          conditionFilter === cond
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {cond === 'all' ? 'All' : cond}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Borrow Fee */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">Pricing</label>
+                  <div className="space-y-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setCostFilter('all')}
+                      className={`w-full py-2.5 px-3 rounded-xl text-left border font-semibold flex items-center justify-between ${
+                        costFilter === 'all' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <span>Any Fee / Deposit</span>
+                      {costFilter === 'all' && <span>✓</span>}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCostFilter('free')}
+                      className={`w-full py-2.5 px-3 rounded-xl text-left border font-semibold flex items-center justify-between ${
+                        costFilter === 'free' ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <span>100% Free Borrowing (₹0 fee)</span>
+                      {costFilter === 'free' && <span>✓</span>}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCostFilter('low-deposit')}
+                      className={`w-full py-2.5 px-3 rounded-xl text-left border font-semibold flex items-center justify-between ${
+                        costFilter === 'low-deposit' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <span>Low Deposit (≤ ₹100)</span>
+                      {costFilter === 'low-deposit' && <span>✓</span>}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sheet Bottom Footer */}
+              <div className="p-4 border-t border-slate-100 flex items-center gap-3 bg-slate-50">
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="px-4 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition"
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="flex-1 py-3 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-soft text-center"
+                >
+                  Show {filteredItems.length} Result{filteredItems.length === 1 ? '' : 's'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Items Grid & Zero State */}
         <main className="lg:col-span-3">

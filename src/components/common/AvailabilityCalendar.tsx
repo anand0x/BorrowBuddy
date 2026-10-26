@@ -38,13 +38,17 @@ export const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayIndex = new Date(year, month, 1).getDay();
 
+  // Helper to get today's date string YYYY-MM-DD
+  const todayStr = formatDateString(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    new Date().getDate()
+  );
+
   // Check if a date string is inside any booked range
   const isDateBooked = (dateStr: string): boolean => {
-    const target = new Date(dateStr).getTime();
     for (const range of bookedRanges) {
-      const start = new Date(range.startDate).getTime();
-      const end = new Date(range.endDate).getTime();
-      if (target >= start && target <= end) {
+      if (dateStr >= range.startDate && dateStr <= range.endDate) {
         return true;
       }
     }
@@ -61,22 +65,25 @@ export const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
 
   const handleDayClick = (dateStr: string) => {
     if (!interactive || !onSelectRange) return;
+    if (dateStr < todayStr) return; // Prevent selecting past dates
     if (isDateBooked(dateStr)) return;
 
     if (!selectedStartDate || (selectedStartDate && selectedEndDate)) {
       // Starting new selection
       onSelectRange(dateStr, '');
     } else if (selectedStartDate && !selectedEndDate) {
-      if (new Date(dateStr) < new Date(selectedStartDate)) {
+      if (dateStr < selectedStartDate) {
         onSelectRange(dateStr, '');
       } else {
         // Check if any date in between is booked
-        let current = new Date(selectedStartDate);
-        const end = new Date(dateStr);
+        const [sY, sM, sD] = selectedStartDate.split('-').map(Number);
+        const [eY, eM, eD] = dateStr.split('-').map(Number);
+        let current = new Date(sY, sM - 1, sD);
+        const end = new Date(eY, eM - 1, eD);
         let hasConflict = false;
 
         while (current <= end) {
-          const dStr = current.toISOString().split('T')[0];
+          const dStr = formatDateString(current.getFullYear(), current.getMonth(), current.getDate());
           if (isDateBooked(dStr)) {
             hasConflict = true;
             break;
@@ -95,12 +102,12 @@ export const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-subtle">
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-subtle">
       {/* Month Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="flex items-center gap-2">
           <CalendarIcon className="w-4 h-4 text-indigo-600" />
-          <h4 className="font-bold text-sm text-slate-800">
+          <h4 className="font-bold text-xs sm:text-sm text-slate-800">
             {monthNames[month]} {year}
           </h4>
         </div>
@@ -108,7 +115,7 @@ export const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
           <button
             type="button"
             onClick={prevMonth}
-            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition"
+            className="p-1 sm:p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition"
             aria-label="Previous month"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -116,7 +123,7 @@ export const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
           <button
             type="button"
             onClick={nextMonth}
-            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition"
+            className="p-1 sm:p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition"
             aria-label="Next month"
           >
             <ChevronRight className="w-4 h-4" />
@@ -125,7 +132,7 @@ export const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
       </div>
 
       {/* Days of week */}
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-400 mb-2">
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] sm:text-xs font-semibold text-slate-400 mb-1.5">
         <span>Su</span>
         <span>Mo</span>
         <span>Tu</span>
@@ -136,10 +143,10 @@ export const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
       </div>
 
       {/* Days grid */}
-      <div className="grid grid-cols-7 gap-1 text-center text-xs">
+      <div className="grid grid-cols-7 gap-1 text-center text-[11px] sm:text-xs">
         {/* Empty slots for start of month */}
         {Array.from({ length: firstDayIndex }).map((_, i) => (
-          <div key={`empty-${i}`} className="h-9 w-full" />
+          <div key={`empty-${i}`} className="h-8 sm:h-9 w-full" />
         ))}
 
         {/* Days of current month */}
@@ -156,24 +163,27 @@ export const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
             new Date(dateStr) > new Date(selectedStartDate) &&
             new Date(dateStr) < new Date(selectedEndDate);
 
-          let dayClasses = 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer';
+          const isPast = dateStr < todayStr;
+          let dayClasses = 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer font-medium';
 
-          if (isBooked) {
-            dayClasses = 'bg-rose-50 text-rose-400 cursor-not-allowed line-through opacity-75';
+          if (isPast) {
+            dayClasses = 'text-slate-300 cursor-not-allowed opacity-40 bg-slate-50/50';
+          } else if (isBooked) {
+            dayClasses = 'bg-rose-50 text-rose-400 cursor-not-allowed line-through opacity-80';
           } else if (isStart || isEnd) {
             dayClasses = 'bg-indigo-600 text-white font-bold rounded-lg shadow-xs';
           } else if (isBetween) {
-            dayClasses = 'bg-indigo-100 text-indigo-800 font-medium';
+            dayClasses = 'bg-indigo-100 text-indigo-800 font-semibold';
           }
 
           return (
             <button
               key={dateStr}
               type="button"
-              disabled={isBooked || !interactive}
+              disabled={isBooked || isPast || !interactive}
               onClick={() => handleDayClick(dateStr)}
-              className={`h-9 w-full flex items-center justify-center rounded-lg transition-colors text-xs ${dayClasses}`}
-              title={isBooked ? 'Already booked' : 'Available'}
+              className={`h-8 sm:h-9 w-full flex items-center justify-center rounded-lg transition-colors ${dayClasses}`}
+              title={isPast ? 'Past date' : isBooked ? 'Already booked' : 'Available for borrowing'}
             >
               {dayNumber}
             </button>
@@ -182,18 +192,22 @@ export const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
       </div>
 
       {/* Legend */}
-      <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-[11px] text-slate-500 gap-2">
+      <div className="mt-3 sm:mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-[10px] sm:text-[11px] text-slate-500 gap-1.5 sm:gap-2">
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-100" />
           <span>Available</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+          <span className="w-2.5 h-2.5 rounded-full bg-rose-400 ring-2 ring-rose-100" />
           <span>Booked</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 ring-2 ring-indigo-200" />
           <span>Selected</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+          <span>Past</span>
         </div>
       </div>
 

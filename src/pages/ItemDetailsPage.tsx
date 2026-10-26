@@ -171,6 +171,28 @@ export const ItemDetailsPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Quick Specs Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-1 text-xs">
+              <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
+                <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Category</span>
+                <span className="font-bold text-slate-800 truncate block mt-0.5">{item.categoryName}</span>
+              </div>
+              <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
+                <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Condition</span>
+                <span className="font-bold text-slate-800 truncate block mt-0.5">{item.condition}</span>
+              </div>
+              <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
+                <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Deposit Escrow</span>
+                <span className="font-bold text-emerald-700 truncate block mt-0.5">
+                  {item.deposit > 0 ? `${formatCurrency(item.deposit)} (Refundable)` : 'None'}
+                </span>
+              </div>
+              <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
+                <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Campus Spot</span>
+                <span className="font-bold text-slate-800 truncate block mt-0.5">{item.pickupLocation}</span>
+              </div>
+            </div>
+
             {/* Description */}
             <div>
               <h3 className="font-bold text-sm text-slate-800 mb-2">Item Description</h3>
@@ -292,15 +314,19 @@ export const ItemDetailsPage: React.FC = () => {
               </div>
 
               {item.deposit > 0 ? (
-                <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-700 font-semibold bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200/80">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>
-                    {formatCurrency(item.deposit)} Refundable Security Deposit
-                  </span>
+                <div className="mt-2.5 p-3 rounded-2xl bg-emerald-50/80 border border-emerald-200/80">
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-800 font-bold">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{formatCurrency(item.deposit)} Refundable Security Deposit</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-700/90 mt-1 leading-relaxed">
+                    100% refundable. Held in campus escrow and returned automatically when you return the item in good condition.
+                  </p>
                 </div>
               ) : (
-                <div className="mt-2 text-xs text-slate-500">
-                  Zero deposit required by owner.
+                <div className="mt-2 text-xs text-slate-500 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Zero security deposit required by owner.</span>
                 </div>
               )}
             </div>
@@ -311,7 +337,7 @@ export const ItemDetailsPage: React.FC = () => {
               borrowFee={item.borrowFee}
             />
 
-            {/* Quick Action Button */}
+            {/* Quick Action Button & Next Steps */}
             <div>
               {isOwner ? (
                 <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 text-center">
@@ -321,36 +347,62 @@ export const ItemDetailsPage: React.FC = () => {
                   </p>
                   <Link
                     to="/my-listings"
-                    className="mt-3 inline-block px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs"
+                    className="mt-3 inline-block px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-soft hover:bg-indigo-700 transition"
                   >
                     Go to My Listings
                   </Link>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsRequestModalOpen(true)}
-                  className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-extrabold text-sm transition shadow-soft-lg flex items-center justify-center gap-2 group"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Request to Borrow</span>
-                </button>
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsRequestModalOpen(true)}
+                    className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-extrabold text-sm transition shadow-soft-lg flex items-center justify-center gap-2 group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                  >
+                    <Sparkles className="w-4 h-4 transition-transform group-hover:scale-110" />
+                    <span>Request to Borrow</span>
+                  </button>
+                  <p className="text-center text-[11px] text-slate-500 font-medium">
+                    No charges until {item.ownerName} accepts your dates
+                  </p>
+                </div>
               )}
             </div>
 
+            {/* How Borrowing Works - Next Steps */}
+            <div className="pt-4 border-t border-slate-100">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
+                How It Works Next
+              </h4>
+              <div className="space-y-2.5 text-xs text-slate-600">
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">1</span>
+                  <span><strong>Pick your dates:</strong> Choose when you need it and send your request.</span>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">2</span>
+                  <span><strong>Owner accepts:</strong> Chat unlocks immediately to coordinate meetup.</span>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">3</span>
+                  <span><strong>Campus exchange:</strong> Meet at {item.pickupLocation} and verify item condition.</span>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">4</span>
+                  <span><strong>Safe return:</strong> Hand back item and deposit is released back instantly.</span>
+                </div>
+              </div>
+            </div>
+
             {/* Campus Trust Features */}
-            <div className="space-y-2.5 pt-4 border-t border-slate-100 text-xs text-slate-600">
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span>Meet at public campus spots (Central Library, Canteen, etc.)</span>
+            <div className="space-y-2 pt-3 border-t border-slate-100 text-xs text-slate-500">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Verified student campus community</span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span>Direct peer chat opens once request is accepted</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span>Security deposit returned instantly upon return</span>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Public designated campus meetup points only</span>
               </div>
             </div>
           </div>

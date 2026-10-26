@@ -9,6 +9,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isDemoUser: boolean;
+  isSupabaseUser: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (data: {
     fullName: string;
@@ -24,6 +26,31 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const LOCAL_CREDENTIALS_KEY = 'bb_local_credentials';
+
+async function hashLocalPassword(password: string, saltHex?: string): Promise<string> {
+  const salt = saltHex
+    ? Uint8Array.from(saltHex.match(/.{2}/g) || [], byte => parseInt(byte, 16))
+    : crypto.getRandomValues(new Uint8Array(16));
+  const bytes = new TextEncoder().encode(password);
+  const key = await crypto.subtle.importKey('raw', bytes, 'PBKDF2', false, ['deriveBits']);
+  const digest = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' },
+    key,
+    256
+  );
+  const toHex = (value: Uint8Array) => Array.from(value, byte => byte.toString(16).padStart(2, '0')).join('');
+  return `${toHex(salt)}:${toHex(new Uint8Array(digest))}`;
+}
+
+function getLocalCredentials(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_CREDENTIALS_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -143,15 +170,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           StorageService.setCurrentUser(profile);
           return { success: true };
         } else if (error) {
-          // If user exists in local demo users, allow fallback login
-          const allUsers = StorageService.getAllUsers();
-          const matched = allUsers.find(u => u.email.toLowerCase() === trimmed);
-          if (matched) {
-            setUser(matched);
-            StorageService.setCurrentUser(matched);
-            return { success: true };
-          }
-
           return { 
             success: false, 
             error: error.message === 'Invalid login credentials'
@@ -164,16 +182,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Fallback: check local storage accounts
+    // Local accounts are only accepted when a password hash was saved at signup.
     const allUsers = StorageService.getAllUsers();
     const matched = allUsers.find(u => u.email.toLowerCase() === trimmed);
-    if (matched) {
+    const savedCredential = getLocalCredentials()[trimmed];
+    const [salt, savedHash] = savedCredential?.split(':') || [];
+    const candidate = salt && savedHash ? await hashLocalPassword(password, salt) : '';
+    if (matched && savedHash && candidate === `${salt}:${savedHash}`) {
       setUser(matched);
       StorageService.setCurrentUser(matched);
       return { success: true };
     }
 
-    return { success: false, error: 'Account not found with this email. Try Demo Account or Sign Up.' };
+    return { success: false, error: matched
+      ? 'Invalid email or password. Please check your credentials.'
+      : 'Account not found with this email. Try Demo Account or Sign Up.' };
   };
 
   const signup = async (data: {
@@ -308,6 +331,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     allUsers.push(fallbackUser);
     localStorage.setItem('bb_users', JSON.stringify(allUsers));
+    const credentials = getLocalCredentials();
+    credentials[trimmedEmail] = await hashLocalPassword(data.password);
+    localStorage.setItem(LOCAL_CREDENTIALS_KEY, JSON.stringify(credentials));
     setUser(fallbackUser);
     StorageService.setCurrentUser(fallbackUser);
 
@@ -332,6 +358,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setUser(null);
     StorageService.setCurrentUser(null);
+    window.dispatchEvent(new CustomEvent('borrowbuddy_user_switched', { detail: null }));
   };
 
   const switchDemoUser = async (userIndex: 0 | 1) => {
@@ -345,7 +372,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const demoUser = MOCK_USERS[userIndex];
     setUser(demoUser);
     StorageService.setCurrentUser(demoUser);
+    window.dispatchEvent(new CustomEvent('borrowbuddy_user_switched', { detail: demoUser }));
   };
+
+  const isDemoUser = Boolean(user && (user.id === 'user-1' || user.id === 'user-2'));
+  const isSupabaseUser = Boolean(isSupabaseConfigured && user && !user.id.startsWith('user-'));
 
   const updateProfile = async (updates: Partial<User>) => {
     if (!user) return;
@@ -384,6 +415,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isAuthenticated: !!user,
         isLoading,
+        isDemoUser,
+        isSupabaseUser,
         login,
         signup,
         logout,
